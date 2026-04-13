@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/udayl/Desktop/Mobile Project/leadrat-black-mobile-flutter/**)"
+    ]
+  }
+}

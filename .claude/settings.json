@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(dart run:*)",
+      "Read(//c/Users/udayl/AppData/Local/Pub/Cache/**)",
+      "Bash(del \"c:\\\\Users\\\\udayl\\\\StudioProjects\\\\temp_architecture_app_setup\\\\lib\\\\core\\\\constants\\\\app_constants.dart\")",
+      "WebFetch(domain:stitch.withgoogle.com)",
+      "WebFetch(domain:www.figma.com)",
+      "WebFetch(domain:embed.figma.com)",
+      "Read(//c/Users/udayl/Downloads/stitch_buyer_self_service_app/stitch_buyer_self_service_app/**)",
+      "Read(//c/Users/udayl/Downloads/Builder CRM Mobile App/**)",
+      "Read(//c/Users/udayl/Downloads/**)",
+      "Bash(grep -E \"\\\\.svg$\")"
+    ]
+  }
+}
