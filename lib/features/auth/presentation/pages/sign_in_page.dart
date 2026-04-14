@@ -98,18 +98,12 @@ class _SignInViewState extends BaseState<_SignInView> {
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => context.push(Routes.forgotPassword),
-                    child: const Text('Forgot Password?'),
-                  ),
+                  child: TextButton(onPressed: () => context.push(Routes.forgotPassword), child: const Text('Forgot Password?')),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(onPressed: _submit, child: const Text('Sign In')),
                 const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => context.push(Routes.signUp),
-                  child: const Text("Don't have an account? Sign Up"),
-                ),
+                TextButton(onPressed: () => context.push(Routes.signUp), child: const Text("Don't have an account? Sign Up")),
               ],
             ),
           ),
@@ -121,10 +115,7 @@ class _SignInViewState extends BaseState<_SignInView> {
   void _submit() {
     final isValid = [_emailFormKey, _passwordFormKey].every((k) => k.currentState?.validate() == true);
     if (isValid) {
-      context.read<SignInCubit>().signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      context.read<SignInCubit>().signIn(email: _emailController.text.trim(), password: _passwordController.text);
     }
   }
 }

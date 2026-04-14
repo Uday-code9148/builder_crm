@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
@@ -55,7 +57,7 @@ extension _TicketStatusUI on TicketStatus {
   Color get color {
     switch (this) {
       case TicketStatus.open:
-        return ColorPalette.primaryTeal;
+        return ColorPalette.primaryTealFixed;
       case TicketStatus.inProgress:
         return ColorPalette.warningAmber;
       case TicketStatus.resolved:
@@ -77,14 +79,14 @@ extension _TicketStatusUI on TicketStatus {
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
-class SupportPage extends StatefulWidget {
+class SupportPage extends BaseStatefulWidget {
   const SupportPage({super.key});
 
   @override
   State<SupportPage> createState() => _SupportPageState();
 }
 
-class _SupportPageState extends State<SupportPage>
+class _SupportPageState extends BaseState<SupportPage>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -99,13 +101,18 @@ class _SupportPageState extends State<SupportPage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    super.build(context); // required by AutomaticKeepAliveClientMixin
+    return buildContent(context);
+  }
+
+  @override
+  Widget buildContent(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<SupportBloc>()..add(const SupportLoadRequested()),
       child: BlocBuilder<SupportBloc, SupportState>(
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: ColorPalette.surface,
+            backgroundColor: context.colors.surface,
             appBar: _buildAppBar(),
             body: _buildBody(context, state),
           );
@@ -115,6 +122,7 @@ class _SupportPageState extends State<SupportPage>
   }
 
   AppBar _buildAppBar() {
+    final colors = context.colors;
     return AppBar(
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
@@ -128,11 +136,10 @@ class _SupportPageState extends State<SupportPage>
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             decoration: BoxDecoration(
-              color: ColorPalette.surface.withValues(alpha: 0.92),
+              color: colors.surface.withValues(alpha: 0.92),
               border: Border(
                   bottom: BorderSide(
-                      color:
-                          ColorPalette.outlineVariant.withValues(alpha: 0.3),
+                      color: colors.outlineVariant.withValues(alpha: 0.3),
                       width: 1)),
             ),
           ),
@@ -145,25 +152,25 @@ class _SupportPageState extends State<SupportPage>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: ColorPalette.primaryTealFixed,
+              color: colors.primaryTealFixed,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                    color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
+                    color: colors.onPrimaryTeal.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4))
               ],
             ),
-            child: const Icon(Icons.home_work_rounded,
-                size: 18, color: ColorPalette.white),
+            child: Icon(Icons.home_work_rounded,
+                size: 18, color: colors.white),
           ),
           const SizedBox(width: 10),
           Text('Architectural Curator',
               style: AppTextStyles.s13SemiBold
-                  .copyWith(color: ColorPalette.onSurface)),
+                  .copyWith(color: colors.onSurface)),
           const Spacer(),
-          const Icon(Icons.swap_horiz_rounded,
-              color: ColorPalette.onSurfaceVariant, size: 20),
+          Icon(Icons.swap_horiz_rounded,
+              color: colors.onSurfaceVariant, size: 20),
           const SizedBox(width: 20),
         ],
       ),
@@ -171,16 +178,17 @@ class _SupportPageState extends State<SupportPage>
   }
 
   Widget _buildBody(BuildContext context, SupportState state) {
+    final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(
-              color: ColorPalette.primaryTeal, strokeWidth: 2));
+              color: colors.primaryTeal, strokeWidth: 2));
     }
     if (state.status == DataStatus.error) {
       return Center(
           child: Text(state.error ?? 'Something went wrong',
               style: AppTextStyles.s13Regular
-                  .copyWith(color: ColorPalette.onSurfaceVariant)));
+                  .copyWith(color: colors.onSurfaceVariant)));
     }
 
     final tickets = state.filteredTickets;
@@ -209,6 +217,7 @@ class _SupportPageState extends State<SupportPage>
   }
 
   Widget _buildHeader() {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,30 +225,31 @@ class _SupportPageState extends State<SupportPage>
             style: AppTextStyles.s24Bold.copyWith(
                 fontSize: 30,
                 fontWeight: FontWeight.w900,
-                color: ColorPalette.onSurface,
+                color: colors.onSurface,
                 letterSpacing: -0.5)),
         const SizedBox(height: 6),
         Text(
             'Manage architectural inquiries and property maintenance requests.',
             style: AppTextStyles.s13Regular.copyWith(
-                color: ColorPalette.onSurfaceVariant, height: 1.4)),
+                color: colors.onSurfaceVariant, height: 1.4)),
       ],
     );
   }
 
   Widget _buildNewTicketButton() {
+    final colors = context.colors;
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [ColorPalette.primaryTeal, ColorPalette.primaryTealContainer],
+          colors: [colors.primaryTeal, colors.primaryTealContainer],
         ),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-              color: ColorPalette.primaryTeal.withValues(alpha: 0.25),
+              color: colors.primaryTeal.withValues(alpha: 0.25),
               blurRadius: 24,
               offset: const Offset(0, 8))
         ],
@@ -250,18 +260,19 @@ class _SupportPageState extends State<SupportPage>
           SvgPicture.asset(ImageResources.icAddTicket,
               width: 18,
               height: 18,
-              colorFilter: const ColorFilter.mode(
-                  ColorPalette.onPrimaryTeal, BlendMode.srcIn)),
+              colorFilter: ColorFilter.mode(
+                  colors.onPrimaryTeal, BlendMode.srcIn)),
           const SizedBox(width: 8),
           Text('New Ticket',
               style: AppTextStyles.s14SemiBold
-                  .copyWith(color: ColorPalette.onPrimaryTeal)),
+                  .copyWith(color: colors.onPrimaryTeal)),
         ],
       ),
     );
   }
 
   Widget _buildFilters(BuildContext context, TicketStatus? activeFilter) {
+    final colors = context.colors;
     return SizedBox(
       height: 34,
       child: ListView.separated(
@@ -281,7 +292,7 @@ class _SupportPageState extends State<SupportPage>
                 border: Border(
                     bottom: BorderSide(
                         color: selected
-                            ? ColorPalette.primaryTeal
+                            ? colors.primaryTeal
                             : Colors.transparent,
                         width: 2)),
               ),
@@ -289,8 +300,8 @@ class _SupportPageState extends State<SupportPage>
                 child: Text(_filterLabels[i],
                     style: AppTextStyles.s13Medium.copyWith(
                         color: selected
-                            ? ColorPalette.primaryTeal
-                            : ColorPalette.onSurfaceDim)),
+                            ? colors.primaryTeal
+                            : colors.onSurfaceDim)),
               ),
             ),
           );
@@ -300,19 +311,20 @@ class _SupportPageState extends State<SupportPage>
   }
 
   Widget _buildLoadMore() {
+    final colors = context.colors;
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
         decoration: BoxDecoration(
-          color: ColorPalette.surfaceContainerHigh,
+          color: colors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(99),
           border: Border.all(
-              color: ColorPalette.outlineVariant.withValues(alpha: 0.4),
+              color: colors.outlineVariant.withValues(alpha: 0.4),
               width: 1),
         ),
         child: Text('Load More Tickets',
             style: AppTextStyles.s13Medium
-                .copyWith(color: ColorPalette.primaryTeal)),
+                .copyWith(color: colors.primaryTeal)),
       ),
     );
   }
@@ -324,18 +336,19 @@ class _TicketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final statusColor = ticket.status.color;
     final categoryColor = ticket.category.color;
     final timeLabelColor =
-        ticket.isUrgent ? ColorPalette.overdueRed : ColorPalette.onSurfaceDim;
+        ticket.isUrgent ? ColorPalette.overdueRed : colors.onSurfaceDim;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: ColorPalette.surfaceContainer,
+        color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+            color: colors.outlineVariant.withValues(alpha: 0.15),
             width: 1),
       ),
       child: IntrinsicHeight(
@@ -361,12 +374,11 @@ class _TicketCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                              color:
-                                  ColorPalette.primaryTeal.withValues(alpha: 0.1),
+                              color: colors.primaryTeal.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6)),
                           child: Text(ticket.id,
                               style: AppTextStyles.s11Regular.copyWith(
-                                  color: ColorPalette.primaryTeal,
+                                  color: colors.primaryTeal,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.3)),
                         ),
@@ -404,12 +416,12 @@ class _TicketCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(ticket.title,
                         style: AppTextStyles.s15SemiBold.copyWith(
-                            color: ColorPalette.onSurface,
+                            color: colors.onSurface,
                             letterSpacing: -0.2)),
                     const SizedBox(height: 3),
                     Text(ticket.preview,
                         style: AppTextStyles.s12Regular
-                            .copyWith(color: ColorPalette.onSurfaceVariant)),
+                            .copyWith(color: colors.onSurfaceVariant)),
                     const SizedBox(height: 12),
                     Row(
                       children: [

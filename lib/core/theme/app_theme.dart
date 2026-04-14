@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/app_color_tokens.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 
@@ -106,6 +107,7 @@ class AppTheme {
     switchTheme: _switchTheme(),
     timePickerTheme: _timePickerTheme(),
     datePickerTheme: _datePickerTheme(),
+    extensions: const [AppColorTokens.dark],
   );
 
   // ─── Light (clean emerald) ──────────────────────────────────────────────────
@@ -192,6 +194,7 @@ class AppTheme {
     switchTheme: _switchTheme(),
     timePickerTheme: _timePickerTheme(),
     datePickerTheme: _datePickerTheme(),
+    extensions: const [AppColorTokens.light],
   );
 
   // ─── Shared helpers ────────────────────────────────────────────────────────

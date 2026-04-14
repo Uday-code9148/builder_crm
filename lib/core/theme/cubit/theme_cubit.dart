@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/constants/hive_constants.dart';
@@ -15,13 +16,13 @@ class ThemeCubit extends Cubit<ThemeState> {
   }
 
   void _loadTheme() {
-    final isDark = _hive.get<bool>(HiveConstants.isDarkModeKey) ?? false;
-    emit(ThemeState(isDarkMode: isDark));
+    final index = _hive.get<int>(HiveConstants.themeModeKey);
+    final mode = index != null ? ThemeMode.values[index] : ThemeMode.system;
+    emit(ThemeState(themeMode: mode));
   }
 
-  Future<void> toggleTheme() async {
-    final newValue = !state.isDarkMode;
-    await _hive.put(HiveConstants.isDarkModeKey, newValue);
-    emit(state.copyWith(isDarkMode: newValue));
+  Future<void> setTheme(ThemeMode mode) async {
+    await _hive.put(HiveConstants.themeModeKey, mode.index);
+    emit(state.copyWith(themeMode: mode));
   }
 }

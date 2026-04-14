@@ -1,22 +1,25 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
+import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/confirm_sign_up/confirm_sign_up_cubit.dart';
 
-class ConfirmSignUpPage extends StatelessWidget {
+class ConfirmSignUpPage extends BaseStatelessWidget {
   final String email;
 
   const ConfirmSignUpPage({required this.email, super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<ConfirmSignUpCubit>(),
       child: _OtpView(identifier: email),
@@ -24,7 +27,7 @@ class ConfirmSignUpPage extends StatelessWidget {
   }
 }
 
-class _OtpView extends StatefulWidget {
+class _OtpView extends BaseStatefulWidget {
   final String identifier;
 
   const _OtpView({required this.identifier});
@@ -33,14 +36,13 @@ class _OtpView extends StatefulWidget {
   State<_OtpView> createState() => _OtpViewState();
 }
 
-class _OtpViewState extends State<_OtpView> {
+class _OtpViewState extends BaseState<_OtpView> {
   final List<String> _digits = List.filled(6, '');
   int _resendSeconds = 30;
   late Timer _timer;
 
   @override
-  void initState() {
-    super.initState();
+  void onInit() {
     _startTimer();
   }
 
@@ -55,12 +57,12 @@ class _OtpViewState extends State<_OtpView> {
   }
 
   @override
-  void dispose() {
+  void onDispose() {
     _timer.cancel();
-    super.dispose();
   }
 
   String get _otpCode => _digits.join();
+
   bool get _isFilled => !_digits.contains('');
 
   void _onKey(String key) {
@@ -83,10 +85,7 @@ class _OtpViewState extends State<_OtpView> {
 
   void _submit() {
     if (_isFilled) {
-      context.read<ConfirmSignUpCubit>().confirmSignUp(
-        email: widget.identifier,
-        code: _otpCode,
-      );
+      context.read<ConfirmSignUpCubit>().confirmSignUp(email: widget.identifier, code: _otpCode);
     }
   }
 
@@ -99,7 +98,7 @@ class _OtpViewState extends State<_OtpView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return BlocListener<ConfirmSignUpCubit, ConfirmSignUpState>(
       listener: (context, state) {
         if (state.canGoLogin) context.go(Routes.login);
@@ -141,10 +140,7 @@ class _OtpViewState extends State<_OtpView> {
                     Container(
                       width: 108,
                       height: 108,
-                      decoration: BoxDecoration(
-                        color: ColorPalette.primaryTeal.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: ColorPalette.primaryTeal.withValues(alpha: 0.12), shape: BoxShape.circle),
                     ),
                     // Inner dark container
                     Container(
@@ -153,16 +149,9 @@ class _OtpViewState extends State<_OtpView> {
                       decoration: BoxDecoration(
                         color: ColorPalette.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
+                        border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.3), width: 1),
                       ),
-                      child: const Icon(
-                        Icons.phone_in_talk_rounded,
-                        size: 36,
-                        color: ColorPalette.primaryTeal,
-                      ),
+                      child: const Icon(Icons.phone_in_talk_rounded, size: 36, color: ColorPalette.primaryTeal),
                     ),
                     // Badge top-right
                     Positioned(
@@ -174,16 +163,9 @@ class _OtpViewState extends State<_OtpView> {
                         decoration: BoxDecoration(
                           color: ColorPalette.primaryTeal,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: ColorPalette.surface,
-                            width: 3,
-                          ),
+                          border: Border.all(color: ColorPalette.surface, width: 3),
                         ),
-                        child: const Icon(
-                          Icons.message_rounded,
-                          size: 12,
-                          color: ColorPalette.onPrimaryTeal,
-                        ),
+                        child: const Icon(Icons.message_rounded, size: 12, color: ColorPalette.onPrimaryTeal),
                       ),
                     ),
                   ],
@@ -192,10 +174,7 @@ class _OtpViewState extends State<_OtpView> {
               const SizedBox(height: 28),
               Text(
                 'Verify your number',
-                style: AppTextStyles.s22SemiBold.copyWith(
-                  color: ColorPalette.onSurface,
-                  letterSpacing: -0.02 * 22,
-                ),
+                style: AppTextStyles.s22SemiBold.copyWith(color: ColorPalette.onSurface, letterSpacing: -0.02 * 22),
               ),
               const SizedBox(height: 10),
               Padding(
@@ -241,19 +220,12 @@ class _OtpViewState extends State<_OtpView> {
                         ImageResources.icResendOtp,
                         width: 14,
                         height: 14,
-                        colorFilter: ColorFilter.mode(
-                          _resendSeconds > 0 ? ColorPalette.onSurfaceDim : ColorPalette.primaryTeal,
-                          BlendMode.srcIn,
-                        ),
+                        colorFilter: ColorFilter.mode(_resendSeconds > 0 ? ColorPalette.onSurfaceDim : ColorPalette.primaryTeal, BlendMode.srcIn),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _resendSeconds > 0
-                            ? 'Resend OTP in 0:${_resendSeconds.toString().padLeft(2, '0')}'
-                            : 'Resend OTP',
-                        style: AppTextStyles.s13Medium.copyWith(
-                          color: _resendSeconds > 0 ? ColorPalette.onSurfaceVariant : ColorPalette.primaryTeal,
-                        ),
+                        _resendSeconds > 0 ? 'Resend OTP in 0:${_resendSeconds.toString().padLeft(2, '0')}' : 'Resend OTP',
+                        style: AppTextStyles.s13Medium.copyWith(color: _resendSeconds > 0 ? ColorPalette.onSurfaceVariant : ColorPalette.primaryTeal),
                       ),
                     ],
                   ),
@@ -283,16 +255,10 @@ class _OtpViewState extends State<_OtpView> {
                       children: [
                         Text(
                           'Continue',
-                          style: AppTextStyles.s15SemiBold.copyWith(
-                            color: _isFilled ? ColorPalette.onPrimaryTeal : ColorPalette.onSurfaceDim,
-                          ),
+                          style: AppTextStyles.s15SemiBold.copyWith(color: _isFilled ? ColorPalette.onPrimaryTeal : ColorPalette.onSurfaceDim),
                         ),
                         const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: _isFilled ? ColorPalette.onPrimaryTeal : ColorPalette.onSurfaceDim,
-                        ),
+                        Icon(Icons.arrow_forward, size: 16, color: _isFilled ? ColorPalette.onPrimaryTeal : ColorPalette.onSurfaceDim),
                       ],
                     ),
                   ),
@@ -301,10 +267,7 @@ class _OtpViewState extends State<_OtpView> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.pop(),
-                child: Text(
-                  'Use another method',
-                  style: AppTextStyles.s13Medium.copyWith(color: ColorPalette.primaryTeal),
-                ),
+                child: Text('Use another method', style: AppTextStyles.s13Medium.copyWith(color: ColorPalette.primaryTeal)),
               ),
               // Separator
               Padding(
@@ -316,10 +279,7 @@ class _OtpViewState extends State<_OtpView> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'ARCHITECTURAL CURATOR',
-                        style: AppTextStyles.s9Regular.copyWith(
-                          color: ColorPalette.outlineVariant,
-                          letterSpacing: 2.5,
-                        ),
+                        style: AppTextStyles.s9Regular.copyWith(color: ColorPalette.outlineVariant, letterSpacing: 2.5),
                       ),
                     ),
                     Expanded(child: Divider(color: ColorPalette.outlineVariant.withValues(alpha: 0.4), height: 1)),
@@ -340,6 +300,7 @@ class _OtpViewState extends State<_OtpView> {
 
 class _OtpBox extends StatelessWidget {
   final String value;
+
   const _OtpBox({required this.value});
 
   @override
@@ -352,30 +313,11 @@ class _OtpBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: filled ? ColorPalette.surfaceContainerHigh : ColorPalette.surfaceContainer,
         borderRadius: BorderRadius.circular(7),
-        border: Border.all(
-          color: filled
-              ? ColorPalette.primaryTeal
-              : ColorPalette.outlineVariant,
-          width: 2,
-        ),
-        boxShadow: filled
-            ? [
-                BoxShadow(
-                  color: ColorPalette.primaryTeal.withValues(alpha: 0.2),
-                  blurRadius: 0,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
+        border: Border.all(color: filled ? ColorPalette.primaryTeal : ColorPalette.outlineVariant, width: 2),
+        boxShadow: filled ? [BoxShadow(color: ColorPalette.primaryTeal.withValues(alpha: 0.2), blurRadius: 0, spreadRadius: 2)] : null,
       ),
       child: Center(
-        child: Text(
-          value.isEmpty ? '' : value,
-          style: AppTextStyles.s18SemiBold.copyWith(
-            color: ColorPalette.onSurface,
-            letterSpacing: -0.5,
-          ),
-        ),
+        child: Text(value.isEmpty ? '' : value, style: AppTextStyles.s18SemiBold.copyWith(color: ColorPalette.onSurface, letterSpacing: -0.5)),
       ),
     );
   }
@@ -405,9 +347,7 @@ class _Numpad extends StatelessWidget {
             if (key == 'del') {
               return GestureDetector(
                 onTap: onDelete,
-                child: _NumKey(
-                  child: const Icon(Icons.backspace_outlined, size: 20, color: ColorPalette.onSurface),
-                ),
+                child: _NumKey(child: const Icon(Icons.backspace_outlined, size: 20, color: ColorPalette.onSurface)),
               );
             }
             final sub = _subLabel(key);
@@ -418,14 +358,7 @@ class _Numpad extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(key, style: AppTextStyles.s20Medium.copyWith(color: ColorPalette.onSurface)),
-                    if (sub.isNotEmpty)
-                      Text(
-                        sub,
-                        style: AppTextStyles.s9Regular.copyWith(
-                          color: ColorPalette.onSurfaceDim,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
+                    if (sub.isNotEmpty) Text(sub, style: AppTextStyles.s9Regular.copyWith(color: ColorPalette.onSurfaceDim, letterSpacing: 1.2)),
                   ],
                 ),
               ),
@@ -444,6 +377,7 @@ class _Numpad extends StatelessWidget {
 
 class _NumKey extends StatefulWidget {
   final Widget child;
+
   const _NumKey({required this.child});
 
   @override

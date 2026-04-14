@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
@@ -38,19 +40,18 @@ extension _PaymentStatusUI on PaymentStatus {
         return ColorPalette.upcomingGrey;
     }
   }
-
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-class PaymentsPage extends StatefulWidget {
+class PaymentsPage extends BaseStatefulWidget {
   const PaymentsPage({super.key});
 
   @override
   State<PaymentsPage> createState() => _PaymentsPageState();
 }
 
-class _PaymentsPageState extends State<PaymentsPage>
+class _PaymentsPageState extends BaseState<PaymentsPage>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -68,13 +69,18 @@ class _PaymentsPageState extends State<PaymentsPage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    super.build(context); // required by AutomaticKeepAliveClientMixin
+    return buildContent(context);
+  }
+
+  @override
+  Widget buildContent(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<PaymentBloc>()..add(const PaymentsLoadRequested()),
       child: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: ColorPalette.surface,
+            backgroundColor: context.colors.surface,
             appBar: _buildAppBar(),
             body: _buildBody(context, state),
           );
@@ -84,6 +90,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   AppBar _buildAppBar() {
+    final colors = context.colors;
     return AppBar(
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
@@ -97,10 +104,10 @@ class _PaymentsPageState extends State<PaymentsPage>
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             decoration: BoxDecoration(
-              color: ColorPalette.surface.withValues(alpha: 0.92),
+              color: colors.surface.withValues(alpha: 0.92),
               border: Border(
                   bottom: BorderSide(
-                      color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
+                      color: colors.outlineVariant.withValues(alpha: 0.3),
                       width: 1)),
             ),
           ),
@@ -113,17 +120,17 @@ class _PaymentsPageState extends State<PaymentsPage>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: ColorPalette.primaryTealFixed,
+              color: colors.primaryTealFixed,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                    color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
+                    color: colors.onPrimaryTeal.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4))
               ],
             ),
-            child: const Icon(Icons.home_work_rounded,
-                size: 18, color: ColorPalette.white),
+            child: Icon(Icons.home_work_rounded,
+                size: 18, color: colors.white),
           ),
           const SizedBox(width: 10),
           Column(
@@ -132,15 +139,15 @@ class _PaymentsPageState extends State<PaymentsPage>
             children: [
               Text('Architectural Curator',
                   style: AppTextStyles.s13SemiBold
-                      .copyWith(color: ColorPalette.onSurface)),
+                      .copyWith(color: colors.onSurface)),
               Text('UNIT 402 · SKY-VILLA',
                   style: AppTextStyles.s10Regular.copyWith(
-                      color: ColorPalette.onSurfaceDim, letterSpacing: 1.2)),
+                      color: colors.onSurfaceDim, letterSpacing: 1.2)),
             ],
           ),
           const Spacer(),
-          const Icon(Icons.swap_horiz_rounded,
-              color: ColorPalette.onSurfaceVariant, size: 20),
+          Icon(Icons.swap_horiz_rounded,
+              color: colors.onSurfaceVariant, size: 20),
           const SizedBox(width: 20),
         ],
       ),
@@ -148,16 +155,17 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Widget _buildBody(BuildContext context, PaymentState state) {
+    final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(
-              color: ColorPalette.primaryTeal, strokeWidth: 2));
+              color: colors.primaryTeal, strokeWidth: 2));
     }
     if (state.status == DataStatus.error) {
       return Center(
           child: Text(state.error ?? 'Something went wrong',
               style: AppTextStyles.s13Regular
-                  .copyWith(color: ColorPalette.onSurfaceVariant)));
+                  .copyWith(color: colors.onSurfaceVariant)));
     }
     if (state.data == null) return const SizedBox.shrink();
 
@@ -184,17 +192,18 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Widget _buildSummary(PaymentSummary summary) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [ColorPalette.surfaceContainer, ColorPalette.surfaceContainerLow],
+          colors: [colors.surfaceContainer, colors.surfaceContainerLow],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
+            color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
       ),
       child: Stack(
         children: [
@@ -206,7 +215,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               width: 80,
               height: 80,
               colorFilter: ColorFilter.mode(
-                  ColorPalette.primaryTeal.withValues(alpha: 0.06),
+                  colors.primaryTeal.withValues(alpha: 0.06),
                   BlendMode.srcIn),
             ),
           ),
@@ -215,13 +224,13 @@ class _PaymentsPageState extends State<PaymentsPage>
             children: [
               Text('Total Outstanding',
                   style: AppTextStyles.s12Regular
-                      .copyWith(color: ColorPalette.onSurfaceVariant)),
+                      .copyWith(color: colors.onSurfaceVariant)),
               const SizedBox(height: 6),
               Text(summary.totalOutstanding,
                   style: AppTextStyles.s24Bold.copyWith(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color: ColorPalette.onSurface,
+                      color: colors.onSurface,
                       letterSpacing: -0.5)),
               const SizedBox(height: 16),
               Row(
@@ -232,12 +241,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                       children: [
                         Text('PAID',
                             style: AppTextStyles.s10Regular.copyWith(
-                                color: ColorPalette.onSurfaceDim,
+                                color: colors.onSurfaceDim,
                                 letterSpacing: 1)),
                         const SizedBox(height: 2),
                         Text(summary.paid,
                             style: AppTextStyles.s13SemiBold
-                                .copyWith(color: ColorPalette.primaryTeal)),
+                                .copyWith(color: colors.primaryTeal)),
                       ],
                     ),
                   ),
@@ -247,12 +256,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                       children: [
                         Text('NEXT DUE',
                             style: AppTextStyles.s10Regular.copyWith(
-                                color: ColorPalette.onSurfaceDim,
+                                color: colors.onSurfaceDim,
                                 letterSpacing: 1)),
                         const SizedBox(height: 2),
                         Text(summary.nextDue,
                             style: AppTextStyles.s13SemiBold
-                                .copyWith(color: ColorPalette.warningAmber)),
+                                .copyWith(color: colors.warningAmber)),
                       ],
                     ),
                   ),
@@ -266,6 +275,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Widget _buildFilters(BuildContext context, PaymentStatus? activeFilter) {
+    final colors = context.colors;
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -283,21 +293,21 @@ class _PaymentsPageState extends State<PaymentsPage>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: selected
-                    ? ColorPalette.primaryTealContainer
-                    : ColorPalette.surfaceContainer,
+                    ? colors.primaryTealContainer
+                    : colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(
                     color: selected
                         ? Colors.transparent
-                        : ColorPalette.outlineVariant,
+                        : colors.outlineVariant,
                     width: 1),
               ),
               child: Text(
                 _filterLabels[i],
                 style: AppTextStyles.s12Medium.copyWith(
                   color: selected
-                      ? ColorPalette.onPrimaryTealContainer
-                      : ColorPalette.onSurfaceVariant,
+                      ? colors.onPrimaryTealContainer
+                      : colors.onSurfaceVariant,
                 ),
               ),
             ),
@@ -308,6 +318,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Widget _buildPaymentCard(PaymentItem item) {
+    final colors = context.colors;
     final statusColor = item.status.color;
     final isExpanded = _expandedId == item.id;
     final hasBreakdown = item.breakdown.isNotEmpty;
@@ -322,13 +333,13 @@ class _PaymentsPageState extends State<PaymentsPage>
           child: Container(
             margin: const EdgeInsets.only(bottom: 0),
             decoration: BoxDecoration(
-              color: ColorPalette.surfaceContainer,
+              color: colors.surfaceContainer,
               borderRadius: BorderRadius.vertical(
                 top: const Radius.circular(12),
                 bottom: Radius.circular(isExpanded ? 0 : 12),
               ),
               border: Border.all(
-                  color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+                  color: colors.outlineVariant.withValues(alpha: 0.15),
                   width: 1),
             ),
             child: IntrinsicHeight(
@@ -338,8 +349,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                     width: 6,
                     decoration: BoxDecoration(
                       color: statusColor,
-                      borderRadius: BorderRadius.horizontal(
-                          left: const Radius.circular(12)),
+                      borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(12)),
                     ),
                   ),
                   Expanded(
@@ -353,16 +364,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                               Expanded(
                                 child: Text(item.stage,
                                     style: AppTextStyles.s14SemiBold
-                                        .copyWith(color: ColorPalette.onSurface)),
+                                        .copyWith(color: colors.onSurface)),
                               ),
                               _Badge(
-                                  label: item.status.label, color: statusColor),
+                                  label: item.status.label,
+                                  color: statusColor),
                             ],
                           ),
                           const SizedBox(height: 2),
                           Text(item.subtitle,
                               style: AppTextStyles.s11Regular
-                                  .copyWith(color: ColorPalette.onSurfaceDim)),
+                                  .copyWith(color: colors.onSurfaceDim)),
                           const SizedBox(height: 12),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -372,12 +384,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 children: [
                                   Text(item.amountLabel,
                                       style: AppTextStyles.s10Regular.copyWith(
-                                          color: ColorPalette.onSurfaceDim,
+                                          color: colors.onSurfaceDim,
                                           letterSpacing: 0.5)),
                                   const SizedBox(height: 2),
                                   Text(item.amount,
                                       style: AppTextStyles.s16SemiBold.copyWith(
-                                          color: ColorPalette.onSurface,
+                                          color: colors.onSurface,
                                           letterSpacing: -0.3)),
                                 ],
                               ),
@@ -395,15 +407,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                                         Text(item.actionLabel,
                                             style: AppTextStyles.s12Medium
                                                 .copyWith(
-                                                    color: ColorPalette
-                                                        .primaryTeal)),
+                                                    color: colors.primaryTeal)),
                                         const SizedBox(width: 2),
                                         Icon(
                                           hasBreakdown
                                               ? Icons.keyboard_arrow_down_rounded
                                               : Icons.open_in_new_rounded,
                                           size: 12,
-                                          color: ColorPalette.primaryTeal,
+                                          color: colors.primaryTeal,
                                         ),
                                       ],
                                     ),
@@ -425,11 +436,11 @@ class _PaymentsPageState extends State<PaymentsPage>
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
-              color: ColorPalette.surfaceContainerHigh,
+              color: colors.surfaceContainerHigh,
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(12)),
               border: Border.all(
-                  color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+                  color: colors.outlineVariant.withValues(alpha: 0.15),
                   width: 1),
             ),
             child: Column(
@@ -442,16 +453,16 @@ class _PaymentsPageState extends State<PaymentsPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                      color: ColorPalette.surfaceContainerHighest,
+                      color: colors.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(6)),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded,
-                          size: 12, color: ColorPalette.onSurfaceDim),
+                      Icon(Icons.info_outline_rounded,
+                          size: 12, color: colors.onSurfaceDim),
                       const SizedBox(width: 6),
                       Text('Payment via RTGS/NEFT only.',
                           style: AppTextStyles.s11Regular
-                              .copyWith(color: ColorPalette.onSurfaceDim)),
+                              .copyWith(color: colors.onSurfaceDim)),
                     ],
                   ),
                 ),
@@ -491,20 +502,21 @@ class _BreakdownItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-          color: ColorPalette.surfaceContainerHighest,
+          color: colors.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(6)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
               style: AppTextStyles.s12Regular
-                  .copyWith(color: ColorPalette.onSurfaceVariant)),
+                  .copyWith(color: colors.onSurfaceVariant)),
           Text(value,
               style:
-                  AppTextStyles.s12Medium.copyWith(color: ColorPalette.onSurface)),
+                  AppTextStyles.s12Medium.copyWith(color: colors.onSurface)),
         ],
       ),
     );

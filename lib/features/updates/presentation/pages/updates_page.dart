@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/features/updates/domain/entities/milestone.dart';
@@ -12,43 +14,47 @@ import 'package:temp_architecture_app_setup/features/updates/presentation/bloc/u
 // ── Enum → UI helpers ────────────────────────────────────────────────────
 
 extension _MilestoneStatusUI on MilestoneStatus {
-  Color get nodeColor {
+  Color nodeColor(AppColors colors) {
     switch (this) {
       case MilestoneStatus.done:
-        return ColorPalette.primaryTeal;
+        return colors.primaryTeal;
       case MilestoneStatus.inProgress:
-        return ColorPalette.warningAmber;
+        return colors.warningAmber;
       case MilestoneStatus.upcoming:
-        return ColorPalette.outlineVariant;
+        return colors.outlineVariant;
     }
   }
-
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
-class UpdatesPage extends StatefulWidget {
+class UpdatesPage extends BaseStatefulWidget {
   const UpdatesPage({super.key});
 
   @override
   State<UpdatesPage> createState() => _UpdatesPageState();
 }
 
-class _UpdatesPageState extends State<UpdatesPage>
+class _UpdatesPageState extends BaseState<UpdatesPage>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    super.build(context); // required by AutomaticKeepAliveClientMixin
+    return buildContent(context);
+  }
+
+  @override
+  Widget buildContent(BuildContext context) {
     return BlocProvider(
       create: (_) =>
           getIt<UpdatesBloc>()..add(const UpdatesLoadRequested()),
       child: BlocBuilder<UpdatesBloc, UpdatesState>(
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: ColorPalette.surface,
+            backgroundColor: context.colors.surface,
             appBar: _buildAppBar(),
             body: _buildBody(state),
           );
@@ -58,6 +64,7 @@ class _UpdatesPageState extends State<UpdatesPage>
   }
 
   AppBar _buildAppBar() {
+    final colors = context.colors;
     return AppBar(
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
@@ -71,11 +78,10 @@ class _UpdatesPageState extends State<UpdatesPage>
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             decoration: BoxDecoration(
-              color: ColorPalette.surface.withValues(alpha: 0.92),
+              color: colors.surface.withValues(alpha: 0.92),
               border: Border(
                   bottom: BorderSide(
-                      color:
-                          ColorPalette.outlineVariant.withValues(alpha: 0.3),
+                      color: colors.outlineVariant.withValues(alpha: 0.3),
                       width: 1)),
             ),
           ),
@@ -88,25 +94,25 @@ class _UpdatesPageState extends State<UpdatesPage>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: ColorPalette.primaryTealFixed,
+              color: colors.primaryTealFixed,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                    color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
+                    color: colors.onPrimaryTeal.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4))
               ],
             ),
-            child: const Icon(Icons.home_work_rounded,
-                size: 18, color: ColorPalette.white),
+            child: Icon(Icons.home_work_rounded,
+                size: 18, color: colors.white),
           ),
           const SizedBox(width: 10),
           Text('Architectural Curator',
               style: AppTextStyles.s13SemiBold
-                  .copyWith(color: ColorPalette.onSurface)),
+                  .copyWith(color: colors.onSurface)),
           const Spacer(),
-          const Icon(Icons.swap_horiz_rounded,
-              color: ColorPalette.onSurfaceVariant, size: 20),
+          Icon(Icons.swap_horiz_rounded,
+              color: colors.onSurfaceVariant, size: 20),
           const SizedBox(width: 20),
         ],
       ),
@@ -114,16 +120,17 @@ class _UpdatesPageState extends State<UpdatesPage>
   }
 
   Widget _buildBody(UpdatesState state) {
+    final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(
-              color: ColorPalette.primaryTeal, strokeWidth: 2));
+              color: colors.primaryTeal, strokeWidth: 2));
     }
     if (state.status == DataStatus.error) {
       return Center(
           child: Text(state.error ?? 'Something went wrong',
               style: AppTextStyles.s13Regular
-                  .copyWith(color: ColorPalette.onSurfaceVariant)));
+                  .copyWith(color: colors.onSurfaceVariant)));
     }
     if (state.data == null) return const SizedBox.shrink();
 
@@ -149,6 +156,7 @@ class _UpdatesPageState extends State<UpdatesPage>
   }
 
   Widget _buildProgressHero(ProjectProgress data) {
+    final colors = context.colors;
     final pct = (data.overallProgress * 100).toInt();
     return Column(
       children: [
@@ -161,9 +169,8 @@ class _UpdatesPageState extends State<UpdatesPage>
               CircularProgressIndicator(
                 value: data.overallProgress,
                 strokeWidth: 10,
-                backgroundColor: ColorPalette.surfaceContainerHigh,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(ColorPalette.primaryTeal),
+                backgroundColor: colors.surfaceContainerHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(colors.primaryTeal),
                 strokeCap: StrokeCap.round,
               ),
               Center(
@@ -174,12 +181,12 @@ class _UpdatesPageState extends State<UpdatesPage>
                         style: AppTextStyles.s24Bold.copyWith(
                             fontSize: 40,
                             fontWeight: FontWeight.w900,
-                            color: ColorPalette.onSurface,
+                            color: colors.onSurface,
                             letterSpacing: -1)),
                     const SizedBox(height: 2),
                     Text('TOTAL PROGRESS',
                         style: AppTextStyles.s9Regular.copyWith(
-                            color: ColorPalette.onSurfaceDim,
+                            color: colors.onSurfaceDim,
                             letterSpacing: 1.2)),
                   ],
                 ),
@@ -190,30 +197,30 @@ class _UpdatesPageState extends State<UpdatesPage>
         const SizedBox(height: 24),
         Text(data.projectName,
             style: AppTextStyles.s22SemiBold
-                .copyWith(color: ColorPalette.onSurface, letterSpacing: -0.4)),
+                .copyWith(color: colors.onSurface, letterSpacing: -0.4)),
         const SizedBox(height: 4),
         Text(data.unit,
             style: AppTextStyles.s13Regular
-                .copyWith(color: ColorPalette.onSurfaceVariant)),
+                .copyWith(color: colors.onSurfaceVariant)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: ColorPalette.surfaceContainerLow,
+            color: colors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(99),
             border: Border.all(
-                color: ColorPalette.outlineVariant.withValues(alpha: 0.4),
+                color: colors.outlineVariant.withValues(alpha: 0.4),
                 width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.access_time_rounded,
-                  size: 11, color: ColorPalette.onSurfaceDim),
+              Icon(Icons.access_time_rounded,
+                  size: 11, color: colors.onSurfaceDim),
               const SizedBox(width: 4),
               Text('Updated ${data.lastUpdated}',
                   style: AppTextStyles.s11Regular
-                      .copyWith(color: ColorPalette.onSurfaceDim)),
+                      .copyWith(color: colors.onSurfaceDim)),
             ],
           ),
         ),
@@ -222,12 +229,13 @@ class _UpdatesPageState extends State<UpdatesPage>
   }
 
   Widget _buildMilestoneList(List<Milestone> milestones) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Milestones',
             style: AppTextStyles.s22SemiBold.copyWith(
-                color: ColorPalette.onSurface, letterSpacing: -0.3)),
+                color: colors.onSurface, letterSpacing: -0.3)),
         const SizedBox(height: 16),
         ...List.generate(milestones.length, (i) {
           return _TimelineTile(
@@ -240,6 +248,7 @@ class _UpdatesPageState extends State<UpdatesPage>
   }
 
   Widget _buildLatestPhotos() {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -247,11 +256,11 @@ class _UpdatesPageState extends State<UpdatesPage>
           children: [
             Text('Latest Photos',
                 style: AppTextStyles.s14SemiBold
-                    .copyWith(color: ColorPalette.onSurface)),
+                    .copyWith(color: colors.onSurface)),
             const Spacer(),
             Text('See All',
                 style: AppTextStyles.s12Medium
-                    .copyWith(color: ColorPalette.primaryTeal)),
+                    .copyWith(color: colors.primaryTeal)),
           ],
         ),
         const SizedBox(height: 12),
@@ -274,10 +283,11 @@ class _TimelineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final isDone = milestone.status == MilestoneStatus.done;
     final isInProgress = milestone.status == MilestoneStatus.inProgress;
     final isUpcoming = milestone.status == MilestoneStatus.upcoming;
-    final nodeColor = milestone.status.nodeColor;
+    final nodeColor = milestone.status.nodeColor(colors);
     final progressPct = '${(milestone.progress * 100).toInt()}%';
 
     return IntrinsicHeight(
@@ -293,18 +303,18 @@ class _TimelineTile extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     color: isDone
-                        ? ColorPalette.primaryTeal
+                        ? colors.primaryTeal
                         : isInProgress
-                            ? ColorPalette.surfaceContainerHighest
-                            : ColorPalette.surfaceContainerLow,
+                            ? colors.surfaceContainerHighest
+                            : colors.surfaceContainerLow,
                     shape: BoxShape.circle,
                     border: Border.all(
                         color: nodeColor,
                         width: isDone ? 0 : (isInProgress ? 2 : 1)),
                   ),
                   child: isDone
-                      ? const Icon(Icons.check_rounded,
-                          size: 13, color: ColorPalette.onPrimaryTeal)
+                      ? Icon(Icons.check_rounded,
+                          size: 13, color: colors.onPrimaryTeal)
                       : isInProgress
                           ? Center(
                               child: Container(
@@ -318,7 +328,7 @@ class _TimelineTile extends StatelessWidget {
                                   width: 6,
                                   height: 6,
                                   decoration: BoxDecoration(
-                                      color: ColorPalette.outlineVariant
+                                      color: colors.outlineVariant
                                           .withValues(alpha: 0.5),
                                       shape: BoxShape.circle))),
                 ),
@@ -329,8 +339,8 @@ class _TimelineTile extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: isDone
-                            ? ColorPalette.primaryTeal.withValues(alpha: 0.35)
-                            : ColorPalette.outlineVariant.withValues(alpha: 0.2),
+                            ? colors.primaryTeal.withValues(alpha: 0.35)
+                            : colors.outlineVariant.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),
@@ -345,13 +355,13 @@ class _TimelineTile extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isUpcoming
-                    ? ColorPalette.surfaceContainerLow
-                    : ColorPalette.surfaceContainer,
+                    ? colors.surfaceContainerLow
+                    : colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                     color: isDone
-                        ? ColorPalette.primaryTeal.withValues(alpha: 0.2)
-                        : ColorPalette.outlineVariant.withValues(alpha: 0.1),
+                        ? colors.primaryTeal.withValues(alpha: 0.2)
+                        : colors.outlineVariant.withValues(alpha: 0.1),
                     width: 1),
               ),
               child: Column(
@@ -363,32 +373,32 @@ class _TimelineTile extends StatelessWidget {
                         child: Text(milestone.title,
                             style: AppTextStyles.s13SemiBold.copyWith(
                                 color: isUpcoming
-                                    ? ColorPalette.onSurfaceDim
-                                    : ColorPalette.onSurface)),
+                                    ? colors.onSurfaceDim
+                                    : colors.onSurface)),
                       ),
                       if (isInProgress)
                         _MiniPill(
                             label: 'In Progress',
-                            color: ColorPalette.warningAmber)
+                            color: colors.warningAmber)
                       else
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                              color: ColorPalette.surfaceContainerHighest,
+                              color: colors.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(4)),
                           child: Text(progressPct,
                               style: AppTextStyles.s11SemiBold.copyWith(
                                   color: isDone
-                                      ? ColorPalette.primaryTeal
-                                      : ColorPalette.onSurfaceDim)),
+                                      ? colors.primaryTeal
+                                      : colors.onSurfaceDim)),
                         ),
                     ],
                   ),
                   const SizedBox(height: 3),
                   Text(milestone.subtitle,
                       style: AppTextStyles.s11Regular
-                          .copyWith(color: ColorPalette.onSurfaceDim)),
+                          .copyWith(color: colors.onSurfaceDim)),
                   if (isInProgress) ...[
                     const SizedBox(height: 10),
                     Stack(
@@ -396,16 +406,16 @@ class _TimelineTile extends StatelessWidget {
                         Container(
                             height: 6,
                             decoration: BoxDecoration(
-                                color: ColorPalette.surfaceContainerHigh,
+                                color: colors.surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(99))),
                         FractionallySizedBox(
                           widthFactor: milestone.progress,
                           child: Container(
                             height: 6,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [
-                                ColorPalette.primaryTeal,
-                                ColorPalette.primaryTealContainer,
+                              gradient: LinearGradient(colors: [
+                                colors.primaryTeal,
+                                colors.primaryTealContainer,
                               ]),
                               borderRadius: BorderRadius.circular(99),
                             ),
@@ -420,14 +430,14 @@ class _TimelineTile extends StatelessWidget {
                       Text('View Photos',
                           style: AppTextStyles.s12Medium.copyWith(
                               color: isUpcoming
-                                  ? ColorPalette.onSurfaceDim
-                                  : ColorPalette.primaryTeal)),
+                                  ? colors.onSurfaceDim
+                                  : colors.primaryTeal)),
                       const SizedBox(width: 2),
                       Icon(Icons.arrow_forward,
                           size: 12,
                           color: isUpcoming
-                              ? ColorPalette.onSurfaceDim
-                              : ColorPalette.primaryTeal),
+                              ? colors.onSurfaceDim
+                              : colors.primaryTeal),
                     ],
                   ),
                 ],
@@ -464,13 +474,14 @@ class _PhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: ColorPalette.surfaceContainerHigh,
+        color: colors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: ColorPalette.outlineVariant.withValues(alpha: 0.2),
+            color: colors.outlineVariant.withValues(alpha: 0.2),
             width: 1),
       ),
       child: Stack(
@@ -478,8 +489,7 @@ class _PhotoCard extends StatelessWidget {
           Center(
             child: Icon(Icons.photo_camera_rounded,
                 size: 28,
-                color:
-                    ColorPalette.primaryTealFixedDim.withValues(alpha: 0.4)),
+                color: ColorPalette.primaryTealFixedDim.withValues(alpha: 0.4)),
           ),
           Positioned(
             bottom: 0,
@@ -488,14 +498,14 @@ class _PhotoCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 6),
               decoration: BoxDecoration(
-                color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.6),
+                color: colors.onPrimaryTeal.withValues(alpha: 0.6),
                 borderRadius:
                     const BorderRadius.vertical(bottom: Radius.circular(12)),
               ),
               child: Center(
                 child: Text(label,
                     style: AppTextStyles.s9SemiBold.copyWith(
-                        color: ColorPalette.onSurface, letterSpacing: 1)),
+                        color: colors.onSurface, letterSpacing: 1)),
               ),
             ),
           ),

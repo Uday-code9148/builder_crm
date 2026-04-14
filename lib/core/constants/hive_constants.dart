@@ -3,4 +3,5 @@ class HiveConstants {
 
   // keys
   static const String isDarkModeKey = 'is_dark_mode';
+  static const String themeModeKey  = 'theme_mode'; // stores ThemeMode.index (int)
 }

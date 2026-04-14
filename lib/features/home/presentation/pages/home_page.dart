@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
+import 'package:temp_architecture_app_setup/core/theme/cubit/theme_cubit.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/sign_out/sign_out_cubit.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/pages/documents_page.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -15,11 +18,11 @@ import 'package:temp_architecture_app_setup/features/payments/presentation/pages
 import 'package:temp_architecture_app_setup/features/support/presentation/pages/support_page.dart';
 import 'package:temp_architecture_app_setup/features/updates/presentation/pages/updates_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends BaseStatelessWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<SignOutCubit>(),
       child: const _HomeShell(),
@@ -27,14 +30,14 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _HomeShell extends StatefulWidget {
+class _HomeShell extends BaseStatefulWidget {
   const _HomeShell();
 
   @override
   State<_HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<_HomeShell> {
+class _HomeShellState extends BaseState<_HomeShell> {
   int _currentIndex = 0;
 
   static const _tabs = [
@@ -46,7 +49,7 @@ class _HomeShellState extends State<_HomeShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return BlocListener<SignOutCubit, SignOutState>(
       listenWhen: (prev, curr) => !prev.canGoLogin && curr.canGoLogin,
       listener: (context, state) => context.go(Routes.login),
@@ -78,7 +81,7 @@ class _TabItem {
   const _TabItem({required this.label, required this.asset});
 }
 
-class _ArchBottomNav extends StatelessWidget {
+class _ArchBottomNav extends BaseStatelessWidget {
   final int currentIndex;
   final List<_TabItem> tabs;
   final ValueChanged<int> onTap;
@@ -90,7 +93,7 @@ class _ArchBottomNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: ColorPalette.surfaceContainerLow,
@@ -156,11 +159,11 @@ class _ArchBottomNav extends StatelessWidget {
   }
 }
 // ─── More tab ─────────────────────────────────────────────────────────────────
-class _MorePage extends StatelessWidget {
+class _MorePage extends BaseStatelessWidget {
   const _MorePage();
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorPalette.surface,
       appBar: _buildAppBar(),
@@ -216,6 +219,12 @@ class _MorePage extends StatelessWidget {
                     icon: Icons.lock_outline_rounded,
                     label: 'Security',
                     subtitle: 'Password & biometrics',
+                  ),
+                  _MoreOption(
+                    icon: Icons.palette_outlined,
+                    label: 'Appearance',
+                    subtitle: 'Light, Dark, or System theme',
+                    onTap: () => _showThemePicker(context),
                   ),
                   _MoreOption(
                     icon: Icons.help_outline_rounded,
@@ -398,6 +407,17 @@ class _MorePage extends StatelessWidget {
     );
   }
 
+  void _showThemePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ColorPalette.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _ThemePickerSheet(),
+    );
+  }
+
 }
 
 class _MoreOption {
@@ -418,12 +438,12 @@ class _MoreOption {
   });
 }
 
-class _MoreOptionTile extends StatelessWidget {
+class _MoreOptionTile extends BaseStatelessWidget {
   final _MoreOption option;
   const _MoreOptionTile({required this.option});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return GestureDetector(
       onTap: option.onTap,
       behavior: HitTestBehavior.opaque,
@@ -472,6 +492,137 @@ class _MoreOptionTile extends StatelessWidget {
         ],
       ),
     ));
+  }
+}
+
+// ─── Theme Picker ─────────────────────────────────────────────────────────────
+class _ThemePickerSheet extends BaseStatelessWidget {
+  const _ThemePickerSheet();
+
+  @override
+  Widget buildContent(BuildContext context) {
+    return BlocBuilder<ThemeCubit, ThemeState>(
+      bloc: getIt<ThemeCubit>(),
+      builder: (context, state) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: ColorPalette.outlineVariant,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text('Appearance',
+                    style: AppTextStyles.s14SemiBold
+                        .copyWith(color: ColorPalette.onSurface)),
+                const SizedBox(height: 14),
+                _ThemeOption(
+                  icon: Icons.light_mode_outlined,
+                  label: 'Light',
+                  selected: state.themeMode == ThemeMode.light,
+                  onTap: () {
+                    getIt<ThemeCubit>().setTheme(ThemeMode.light);
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ThemeOption(
+                  icon: Icons.dark_mode_outlined,
+                  label: 'Dark',
+                  selected: state.themeMode == ThemeMode.dark,
+                  onTap: () {
+                    getIt<ThemeCubit>().setTheme(ThemeMode.dark);
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ThemeOption(
+                  icon: Icons.brightness_auto_outlined,
+                  label: 'System default',
+                  selected: state.themeMode == ThemeMode.system,
+                  onTap: () {
+                    getIt<ThemeCubit>().setTheme(ThemeMode.system);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ThemeOption extends BaseStatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget buildContent(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected
+              ? ColorPalette.primaryTeal.withValues(alpha: 0.08)
+              : ColorPalette.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? ColorPalette.primaryTeal.withValues(alpha: 0.45)
+                : ColorPalette.outlineVariant.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected
+                  ? ColorPalette.primaryTeal
+                  : ColorPalette.onSurfaceVariant,
+            ),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: AppTextStyles.s14Medium.copyWith(
+                color: selected
+                    ? ColorPalette.primaryTeal
+                    : ColorPalette.onSurface,
+              ),
+            ),
+            const Spacer(),
+            if (selected)
+              const Icon(Icons.check_circle_rounded,
+                  size: 18, color: ColorPalette.primaryTeal),
+          ],
+        ),
+      ),
+    );
   }
 }
 
