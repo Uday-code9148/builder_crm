@@ -1,0 +1,30 @@
+import 'dart:async';
+
+import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
+import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/domain/usecases/get_dashboard_data_usecase.dart';
+
+part 'dashboard_event.dart';
+part 'dashboard_state.dart';
+
+@injectable
+class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
+  final GetDashboardDataUseCase _getDashboardData;
+
+  DashboardBloc(this._getDashboardData) : super(const DashboardState()) {
+    on<DashboardLoadRequested>(_onLoad);
+  }
+
+  FutureOr<void> _onLoad(DashboardLoadRequested event, Emitter<DashboardState> emit) async {
+    emit(state.copyWith(status: DataStatus.loading));
+    final result = await _getDashboardData(const NoParams());
+    result.fold(
+      (failure) => emit(state.copyWith(status: DataStatus.error, error: failure.message)),
+      (data) => emit(state.copyWith(status: DataStatus.loaded, data: data)),
+    );
+  }
+}

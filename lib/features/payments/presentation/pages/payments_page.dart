@@ -1,9 +1,47 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
+import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
+import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
+import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment.dart';
+import 'package:temp_architecture_app_setup/features/payments/presentation/blocs/payments_bloc/payment_bloc.dart';
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+extension _PaymentStatusUI on PaymentStatus {
+  String get label {
+    switch (this) {
+      case PaymentStatus.paid:
+        return 'PAID';
+      case PaymentStatus.pending:
+        return 'PENDING';
+      case PaymentStatus.overdue:
+        return 'OVERDUE';
+      case PaymentStatus.upcoming:
+        return 'UPCOMING';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case PaymentStatus.paid:
+        return ColorPalette.paidGreen;
+      case PaymentStatus.pending:
+        return ColorPalette.pendingTeal;
+      case PaymentStatus.overdue:
+        return ColorPalette.overdueRed;
+      case PaymentStatus.upcoming:
+        return ColorPalette.upcomingGrey;
+    }
+  }
+
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({super.key});
@@ -17,39 +55,30 @@ class _PaymentsPageState extends State<PaymentsPage>
   @override
   bool get wantKeepAlive => true;
 
-  int _filterIndex = 0;
-  static const _filters = ['All', 'Paid', 'Due', 'Overdue', 'Upcoming'];
+  String? _expandedId;
 
-  bool _expanded = false; // brickwork card expanded state
+  static const _filterLabels = ['All', 'Paid', 'Due', 'Overdue', 'Upcoming'];
+  static const _filterValues = [
+    null,
+    PaymentStatus.paid,
+    PaymentStatus.pending,
+    PaymentStatus.overdue,
+    PaymentStatus.upcoming,
+  ];
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(
-      backgroundColor: ColorPalette.surface,
-      appBar: _buildAppBar(),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const SizedBox(height: 20),
-                _buildSummary(),
-                const SizedBox(height: 20),
-                _buildFilters(),
-                const SizedBox(height: 16),
-                _buildOverdueCard(),
-                const SizedBox(height: 12),
-                _buildBrickworkCard(),
-                const SizedBox(height: 12),
-                _buildFoundationCard(),
-                const SizedBox(height: 12),
-                _buildFinishingCard(),
-              ]),
-            ),
-          ),
-        ],
+    return BlocProvider(
+      create: (_) => getIt<PaymentBloc>()..add(const PaymentsLoadRequested()),
+      child: BlocBuilder<PaymentBloc, PaymentState>(
+        builder: (context, state) {
+          return Scaffold(
+            backgroundColor: ColorPalette.surface,
+            appBar: _buildAppBar(),
+            body: _buildBody(context, state),
+          );
+        },
       ),
     );
   }
@@ -70,11 +99,9 @@ class _PaymentsPageState extends State<PaymentsPage>
             decoration: BoxDecoration(
               color: ColorPalette.surface.withValues(alpha: 0.92),
               border: Border(
-                bottom: BorderSide(
-                  color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
+                  bottom: BorderSide(
+                      color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
+                      width: 1)),
             ),
           ),
         ),
@@ -90,13 +117,13 @@ class _PaymentsPageState extends State<PaymentsPage>
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+                    color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4))
               ],
             ),
-            child: const Icon(Icons.home_work_rounded, size: 18, color: ColorPalette.white),
+            child: const Icon(Icons.home_work_rounded,
+                size: 18, color: ColorPalette.white),
           ),
           const SizedBox(width: 10),
           Column(
@@ -104,21 +131,59 @@ class _PaymentsPageState extends State<PaymentsPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Architectural Curator',
-                  style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.onSurface)),
+                  style: AppTextStyles.s13SemiBold
+                      .copyWith(color: ColorPalette.onSurface)),
               Text('UNIT 402 · SKY-VILLA',
                   style: AppTextStyles.s10Regular.copyWith(
                       color: ColorPalette.onSurfaceDim, letterSpacing: 1.2)),
             ],
           ),
           const Spacer(),
-          const Icon(Icons.swap_horiz_rounded, color: ColorPalette.onSurfaceVariant, size: 20),
+          const Icon(Icons.swap_horiz_rounded,
+              color: ColorPalette.onSurfaceVariant, size: 20),
           const SizedBox(width: 20),
         ],
       ),
     );
   }
 
-  Widget _buildSummary() {
+  Widget _buildBody(BuildContext context, PaymentState state) {
+    if (state.status == DataStatus.loading) {
+      return const Center(
+          child: CircularProgressIndicator(
+              color: ColorPalette.primaryTeal, strokeWidth: 2));
+    }
+    if (state.status == DataStatus.error) {
+      return Center(
+          child: Text(state.error ?? 'Something went wrong',
+              style: AppTextStyles.s13Regular
+                  .copyWith(color: ColorPalette.onSurfaceVariant)));
+    }
+    if (state.data == null) return const SizedBox.shrink();
+
+    final data = state.data!;
+    final items = state.filteredItems;
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              const SizedBox(height: 20),
+              _buildSummary(data.summary),
+              const SizedBox(height: 20),
+              _buildFilters(context, state.activeFilter),
+              const SizedBox(height: 16),
+              ...items.map((item) => _buildPaymentCard(item)),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummary(PaymentSummary summary) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -128,11 +193,11 @@ class _PaymentsPageState extends State<PaymentsPage>
           colors: [ColorPalette.surfaceContainer, ColorPalette.surfaceContainerLow],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
+        border: Border.all(
+            color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
       ),
       child: Stack(
         children: [
-          // Watermark icon
           Positioned(
             right: -8,
             bottom: -8,
@@ -141,18 +206,18 @@ class _PaymentsPageState extends State<PaymentsPage>
               width: 80,
               height: 80,
               colorFilter: ColorFilter.mode(
-                ColorPalette.primaryTeal.withValues(alpha: 0.06),
-                BlendMode.srcIn,
-              ),
+                  ColorPalette.primaryTeal.withValues(alpha: 0.06),
+                  BlendMode.srcIn),
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Total Outstanding',
-                  style: AppTextStyles.s12Regular.copyWith(color: ColorPalette.onSurfaceVariant)),
+                  style: AppTextStyles.s12Regular
+                      .copyWith(color: ColorPalette.onSurfaceVariant)),
               const SizedBox(height: 6),
-              Text('₹45,50,000',
+              Text(summary.totalOutstanding,
                   style: AppTextStyles.s24Bold.copyWith(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
@@ -167,10 +232,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                       children: [
                         Text('PAID',
                             style: AppTextStyles.s10Regular.copyWith(
-                                color: ColorPalette.onSurfaceDim, letterSpacing: 1)),
+                                color: ColorPalette.onSurfaceDim,
+                                letterSpacing: 1)),
                         const SizedBox(height: 2),
-                        Text('₹1,25,00,000',
-                            style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.primaryTeal)),
+                        Text(summary.paid,
+                            style: AppTextStyles.s13SemiBold
+                                .copyWith(color: ColorPalette.primaryTeal)),
                       ],
                     ),
                   ),
@@ -180,10 +247,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                       children: [
                         Text('NEXT DUE',
                             style: AppTextStyles.s10Regular.copyWith(
-                                color: ColorPalette.onSurfaceDim, letterSpacing: 1)),
+                                color: ColorPalette.onSurfaceDim,
+                                letterSpacing: 1)),
                         const SizedBox(height: 2),
-                        Text('₹15,00,000',
-                            style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.warningAmber)),
+                        Text(summary.nextDue,
+                            style: AppTextStyles.s13SemiBold
+                                .copyWith(color: ColorPalette.warningAmber)),
                       ],
                     ),
                   ),
@@ -196,32 +265,39 @@ class _PaymentsPageState extends State<PaymentsPage>
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(BuildContext context, PaymentStatus? activeFilter) {
     return SizedBox(
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _filters.length,
+        itemCount: _filterLabels.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
-          final selected = i == _filterIndex;
+          final selected = _filterValues[i] == activeFilter;
           return GestureDetector(
-            onTap: () => setState(() => _filterIndex = i),
+            onTap: () => context
+                .read<PaymentBloc>()
+                .add(PaymentsFilterChanged(_filterValues[i])),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: selected ? ColorPalette.primaryTealContainer : ColorPalette.surfaceContainer,
+                color: selected
+                    ? ColorPalette.primaryTealContainer
+                    : ColorPalette.surfaceContainer,
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(
-                  color: selected ? Colors.transparent : ColorPalette.outlineVariant,
-                  width: 1,
-                ),
+                    color: selected
+                        ? Colors.transparent
+                        : ColorPalette.outlineVariant,
+                    width: 1),
               ),
               child: Text(
-                _filters[i],
+                _filterLabels[i],
                 style: AppTextStyles.s12Medium.copyWith(
-                  color: selected ? ColorPalette.onPrimaryTealContainer : ColorPalette.onSurfaceVariant,
+                  color: selected
+                      ? ColorPalette.onPrimaryTealContainer
+                      : ColorPalette.onSurfaceVariant,
                 ),
               ),
             ),
@@ -231,227 +307,159 @@ class _PaymentsPageState extends State<PaymentsPage>
     );
   }
 
-  Widget _buildOverdueCard() {
-    return _PaymentCard(
-      stage: 'Slab 08 Completion',
-      subtitle: '8th Floor Structural Work',
-      badge: 'OVERDUE',
-      badgeColor: ColorPalette.overdueRed,
-      label: 'AMOUNT DUE',
-      amount: '₹15,00,000',
-      dateLabel: 'DUE 12 OCT 2023',
-      dateColor: ColorPalette.overdueRed,
-      actionLabel: 'View Details',
-      actionIcon: Icons.keyboard_arrow_down_rounded,
-      leftAccentColor: ColorPalette.overdueRed,
-    );
-  }
+  Widget _buildPaymentCard(PaymentItem item) {
+    final statusColor = item.status.color;
+    final isExpanded = _expandedId == item.id;
+    final hasBreakdown = item.breakdown.isNotEmpty;
 
-  Widget _buildBrickworkCard() {
     return Column(
       children: [
-        _PaymentCard(
-          stage: 'Brickwork Level 04',
-          subtitle: 'Internal & External Masonry',
-          badge: 'PENDING',
-          badgeColor: ColorPalette.pendingTeal,
-          label: 'AMOUNT DUE',
-          amount: '₹12,50,000',
-          dateLabel: 'DUE 28 NOV 2023',
-          dateColor: ColorPalette.pendingTeal,
-          actionLabel: 'Pay Now',
-          actionIcon: Icons.open_in_new_rounded,
-          leftAccentColor: ColorPalette.pendingTeal,
-          onTap: () => setState(() => _expanded = !_expanded),
+        GestureDetector(
+          onTap: hasBreakdown
+              ? () => setState(
+                  () => _expandedId = isExpanded ? null : item.id)
+              : null,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 0),
+            decoration: BoxDecoration(
+              color: ColorPalette.surfaceContainer,
+              borderRadius: BorderRadius.vertical(
+                top: const Radius.circular(12),
+                bottom: Radius.circular(isExpanded ? 0 : 12),
+              ),
+              border: Border.all(
+                  color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+                  width: 1),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.horizontal(
+                          left: const Radius.circular(12)),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(item.stage,
+                                    style: AppTextStyles.s14SemiBold
+                                        .copyWith(color: ColorPalette.onSurface)),
+                              ),
+                              _Badge(
+                                  label: item.status.label, color: statusColor),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(item.subtitle,
+                              style: AppTextStyles.s11Regular
+                                  .copyWith(color: ColorPalette.onSurfaceDim)),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.amountLabel,
+                                      style: AppTextStyles.s10Regular.copyWith(
+                                          color: ColorPalette.onSurfaceDim,
+                                          letterSpacing: 0.5)),
+                                  const SizedBox(height: 2),
+                                  Text(item.amount,
+                                      style: AppTextStyles.s16SemiBold.copyWith(
+                                          color: ColorPalette.onSurface,
+                                          letterSpacing: -0.3)),
+                                ],
+                              ),
+                              const Spacer(),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(item.dateLabel,
+                                      style: AppTextStyles.s11SemiBold
+                                          .copyWith(color: statusColor)),
+                                  if (item.actionLabel.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Text(item.actionLabel,
+                                            style: AppTextStyles.s12Medium
+                                                .copyWith(
+                                                    color: ColorPalette
+                                                        .primaryTeal)),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          hasBreakdown
+                                              ? Icons.keyboard_arrow_down_rounded
+                                              : Icons.open_in_new_rounded,
+                                          size: 12,
+                                          color: ColorPalette.primaryTeal,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        if (_expanded)
+        if (isExpanded && item.breakdown.isNotEmpty)
           Container(
-            margin: const EdgeInsets.only(top: 2),
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
               color: ColorPalette.surfaceContainerHigh,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-              border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(12)),
+              border: Border.all(
+                  color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+                  width: 1),
             ),
             child: Column(
               children: [
-                _BreakdownItem('Principal Amount', '₹11,16,071'),
-                const SizedBox(height: 6),
-                _BreakdownItem('GST (12%)', '₹1,33,929'),
-                const SizedBox(height: 6),
-                _BreakdownItem('TDS (1%)', '- ₹11,160'),
-                const SizedBox(height: 10),
+                ...item.breakdown.map((b) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: _BreakdownItem(b.label, b.value),
+                    )),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: ColorPalette.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                      color: ColorPalette.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(6)),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded, size: 12, color: ColorPalette.onSurfaceDim),
+                      const Icon(Icons.info_outline_rounded,
+                          size: 12, color: ColorPalette.onSurfaceDim),
                       const SizedBox(width: 6),
                       Text('Payment via RTGS/NEFT only.',
-                          style: AppTextStyles.s11Regular.copyWith(color: ColorPalette.onSurfaceDim)),
+                          style: AppTextStyles.s11Regular
+                              .copyWith(color: ColorPalette.onSurfaceDim)),
                     ],
                   ),
                 ),
               ],
             ),
           ),
+        const SizedBox(height: 12),
       ],
-    );
-  }
-
-  Widget _buildFoundationCard() {
-    return _PaymentCard(
-      stage: 'Foundation Completion',
-      subtitle: 'Raft & Piling Work Finished',
-      badge: 'PAID',
-      badgeColor: ColorPalette.paidGreen,
-      label: 'AMOUNT PAID',
-      amount: '₹18,00,000',
-      dateLabel: '15 SEP 2023',
-      dateColor: ColorPalette.onSurfaceVariant,
-      actionLabel: 'Receipt',
-      actionIcon: Icons.download_rounded,
-      leftAccentColor: ColorPalette.paidGreen,
-    );
-  }
-
-  Widget _buildFinishingCard() {
-    return _PaymentCard(
-      stage: 'Finishing & Plaster',
-      subtitle: 'Stage 12 of 15',
-      badge: 'UPCOMING',
-      badgeColor: ColorPalette.upcomingGrey,
-      label: 'EST. AMOUNT',
-      amount: '₹8,00,000',
-      dateLabel: 'JAN 2024',
-      dateColor: ColorPalette.onSurfaceDim,
-      actionLabel: '',
-      actionIcon: null,
-      leftAccentColor: ColorPalette.upcomingGrey,
-    );
-  }
-}
-
-class _PaymentCard extends StatelessWidget {
-  final String stage;
-  final String subtitle;
-  final String badge;
-  final Color badgeColor;
-  final String label;
-  final String amount;
-  final String dateLabel;
-  final Color dateColor;
-  final String actionLabel;
-  final IconData? actionIcon;
-  final Color leftAccentColor;
-  final VoidCallback? onTap;
-
-  const _PaymentCard({
-    required this.stage,
-    required this.subtitle,
-    required this.badge,
-    required this.badgeColor,
-    required this.label,
-    required this.amount,
-    required this.dateLabel,
-    required this.dateColor,
-    required this.actionLabel,
-    required this.actionIcon,
-    required this.leftAccentColor,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: ColorPalette.surfaceContainer,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Left accent
-              Container(
-                width: 6,
-                decoration: BoxDecoration(
-                  color: leftAccentColor,
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(stage,
-                                style: AppTextStyles.s14SemiBold.copyWith(color: ColorPalette.onSurface)),
-                          ),
-                          _Badge(label: badge, color: badgeColor),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(subtitle,
-                          style: AppTextStyles.s11Regular.copyWith(color: ColorPalette.onSurfaceDim)),
-                      const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(label,
-                                  style: AppTextStyles.s10Regular.copyWith(
-                                      color: ColorPalette.onSurfaceDim, letterSpacing: 0.5)),
-                              const SizedBox(height: 2),
-                              Text(amount,
-                                  style: AppTextStyles.s16SemiBold.copyWith(
-                                      color: ColorPalette.onSurface, letterSpacing: -0.3)),
-                            ],
-                          ),
-                          const Spacer(),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(dateLabel,
-                                  style: AppTextStyles.s11SemiBold.copyWith(color: dateColor)),
-                              if (actionLabel.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(actionLabel,
-                                        style: AppTextStyles.s12Medium.copyWith(
-                                            color: ColorPalette.primaryTeal)),
-                                    if (actionIcon != null) ...[
-                                      const SizedBox(width: 2),
-                                      Icon(actionIcon, size: 12, color: ColorPalette.primaryTeal),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -459,6 +467,7 @@ class _PaymentCard extends StatelessWidget {
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
+
   const _Badge({required this.label, required this.color});
 
   @override
@@ -466,9 +475,8 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(99),
-      ),
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(99)),
       child: Text(label,
           style: AppTextStyles.s9SemiBold.copyWith(color: color, letterSpacing: 0.5)),
     );
@@ -478,6 +486,7 @@ class _Badge extends StatelessWidget {
 class _BreakdownItem extends StatelessWidget {
   final String label;
   final String value;
+
   const _BreakdownItem(this.label, this.value);
 
   @override
@@ -485,14 +494,17 @@ class _BreakdownItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: ColorPalette.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-      ),
+          color: ColorPalette.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(6)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTextStyles.s12Regular.copyWith(color: ColorPalette.onSurfaceVariant)),
-          Text(value, style: AppTextStyles.s12Medium.copyWith(color: ColorPalette.onSurface)),
+          Text(label,
+              style: AppTextStyles.s12Regular
+                  .copyWith(color: ColorPalette.onSurfaceVariant)),
+          Text(value,
+              style:
+                  AppTextStyles.s12Medium.copyWith(color: ColorPalette.onSurface)),
         ],
       ),
     );

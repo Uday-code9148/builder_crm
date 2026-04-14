@@ -1,9 +1,53 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
+import 'package:temp_architecture_app_setup/features/documents/domain/entity/document.dart';
+import 'package:temp_architecture_app_setup/features/documents/presentation/blocs/documents_bloc/documents_bloc.dart';
+
+// ── Status/accent helpers ─────────────────────────────────────────────────
+
+extension _DocStatusUI on DocStatus {
+  String? get label {
+    switch (this) {
+      case DocStatus.verified:
+        return 'Verified';
+      case DocStatus.pending:
+        return 'Pending';
+      case DocStatus.none:
+        return null;
+    }
+  }
+
+  Color? get color {
+    switch (this) {
+      case DocStatus.verified:
+        return ColorPalette.primaryTeal;
+      case DocStatus.pending:
+        return ColorPalette.warningAmber;
+      case DocStatus.none:
+        return null;
+    }
+  }
+}
+
+Color _accentColor(String token) {
+  switch (token) {
+    case 'secondaryPurple':
+      return ColorPalette.secondaryPurple;
+    case 'tertiaryTeal':
+      return ColorPalette.tertiaryTeal;
+    default:
+      return ColorPalette.primaryTeal;
+  }
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key});
@@ -22,88 +66,18 @@ class _DocumentsPageState extends State<DocumentsPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(
-      backgroundColor: ColorPalette.surface,
-      appBar: _buildAppBar(),
-      floatingActionButton: _GradientFab(),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const SizedBox(height: 24),
-                _buildSearch(),
-                const SizedBox(height: 16),
-                _buildTabs(),
-                const SizedBox(height: 24),
-                _buildSection(
-                  title: 'Legal Documents',
-                  accentColor: ColorPalette.secondaryPurple,
-                  children: [
-                    _DocRowTile(
-                      asset: ImageResources.icPurchaseAgreement,
-                      title: 'Purchase Agreement_V4.pdf',
-                      subtitle: 'Updated: Oct 24, 2023 · 2.4 MB',
-                    ),
-                    _DocRowTile(
-                      asset: ImageResources.icTitleDeedDraft,
-                      title: 'Title Deed_Draft.pdf',
-                      subtitle: 'Updated: Sep 12, 2023 · 1.1 MB',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildSection(
-                  title: 'Payment & Finance',
-                  accentColor: ColorPalette.primaryTeal,
-                  children: [
-                    _DocRowTile(
-                      asset: ImageResources.icInitialDepositReceipt,
-                      title: 'Initial Deposit Receipt #4920',
-                      subtitle: '',
-                      statusLabel: 'Verified',
-                      statusColor: ColorPalette.primaryTeal,
-                    ),
-                    _DocRowTile(
-                      asset: ImageResources.icStructuralEscrow,
-                      title: 'Structural Escrow Release Schedule',
-                      subtitle: '',
-                      statusLabel: 'Pending',
-                      statusColor: ColorPalette.warningAmber,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildSection(
-                  title: 'Certificates & Compliance',
-                  accentColor: ColorPalette.tertiaryTeal,
-                  children: [],
-                  certCards: const [
-                    _CertCard(
-                      asset: ImageResources.icEnvironmentalImpact,
-                      title: 'Environmental Impact Report',
-                      subtitle: 'Certified by Urban Planning Dept.',
-                      accentColor: ColorPalette.secondaryPurple,
-                    ),
-                    _CertCard(
-                      asset: ImageResources.icEnergyRating,
-                      title: 'Energy Rating Certificate',
-                      subtitle: 'A+ Sustainability Grade',
-                      accentColor: ColorPalette.primaryTeal,
-                    ),
-                    _CertCard(
-                      asset: ImageResources.icSafetyInspection,
-                      title: 'Safety Inspection Log',
-                      subtitle: 'Last inspected: Oct 10, 2023',
-                      accentColor: ColorPalette.tertiaryTeal,
-                    ),
-                  ],
-                ),
-              ]),
-            ),
-          ),
-        ],
+    return BlocProvider(
+      create: (_) =>
+          getIt<DocumentsBloc>()..add(const DocumentsLoadRequested()),
+      child: BlocBuilder<DocumentsBloc, DocumentsState>(
+        builder: (context, state) {
+          return Scaffold(
+            backgroundColor: ColorPalette.surface,
+            appBar: _buildAppBar(),
+            floatingActionButton: _GradientFab(),
+            body: _buildBody(state),
+          );
+        },
       ),
     );
   }
@@ -124,11 +98,10 @@ class _DocumentsPageState extends State<DocumentsPage>
             decoration: BoxDecoration(
               color: ColorPalette.surface.withValues(alpha: 0.92),
               border: Border(
-                bottom: BorderSide(
-                  color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
+                  bottom: BorderSide(
+                      color:
+                          ColorPalette.outlineVariant.withValues(alpha: 0.3),
+                      width: 1)),
             ),
           ),
         ),
@@ -144,22 +117,71 @@ class _DocumentsPageState extends State<DocumentsPage>
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+                    color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4))
               ],
             ),
-            child: const Icon(Icons.home_work_rounded, size: 18, color: ColorPalette.white),
+            child: const Icon(Icons.home_work_rounded,
+                size: 18, color: ColorPalette.white),
           ),
           const SizedBox(width: 10),
           Text('Architectural Curator',
-              style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.onSurface)),
+              style: AppTextStyles.s13SemiBold
+                  .copyWith(color: ColorPalette.onSurface)),
           const Spacer(),
-          const Icon(Icons.swap_horiz_rounded, color: ColorPalette.onSurfaceVariant, size: 20),
+          const Icon(Icons.swap_horiz_rounded,
+              color: ColorPalette.onSurfaceVariant, size: 20),
           const SizedBox(width: 20),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(DocumentsState state) {
+    if (state.status == DataStatus.loading) {
+      return const Center(
+          child: CircularProgressIndicator(
+              color: ColorPalette.primaryTeal, strokeWidth: 2));
+    }
+    if (state.status == DataStatus.error) {
+      return Center(
+          child: Text(state.error ?? 'Something went wrong',
+              style: AppTextStyles.s13Regular
+                  .copyWith(color: ColorPalette.onSurfaceVariant)));
+    }
+    if (state.data == null) return const SizedBox.shrink();
+
+    final data = state.data!;
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              const SizedBox(height: 24),
+              _buildSearch(),
+              const SizedBox(height: 16),
+              _buildTabs(),
+              const SizedBox(height: 24),
+              _buildSection(
+                title: 'Legal Documents',
+                accentColor: ColorPalette.secondaryPurple,
+                items: data.legalDocs,
+              ),
+              const SizedBox(height: 20),
+              _buildSection(
+                title: 'Payment & Finance',
+                accentColor: ColorPalette.primaryTeal,
+                items: data.paymentDocs,
+              ),
+              const SizedBox(height: 20),
+              _buildCertSection(data.certificates),
+            ]),
+          ),
+        ),
+      ],
     );
   }
 
@@ -174,16 +196,16 @@ class _DocumentsPageState extends State<DocumentsPage>
       child: Row(
         children: [
           const SizedBox(width: 14),
-          SvgPicture.asset(
-            ImageResources.icSearch,
-            width: 18,
-            height: 18,
-            colorFilter: const ColorFilter.mode(ColorPalette.onSurfaceDim, BlendMode.srcIn),
-          ),
+          SvgPicture.asset(ImageResources.icSearch,
+              width: 18,
+              height: 18,
+              colorFilter: const ColorFilter.mode(
+                  ColorPalette.onSurfaceDim, BlendMode.srcIn)),
           const SizedBox(width: 10),
           Expanded(
             child: Text('Search architectural plans, contract…',
-                style: AppTextStyles.s13Regular.copyWith(color: ColorPalette.onSurfaceDim)),
+                style: AppTextStyles.s13Regular
+                    .copyWith(color: ColorPalette.onSurfaceDim)),
           ),
         ],
       ),
@@ -215,12 +237,11 @@ class _DocumentsPageState extends State<DocumentsPage>
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Center(
-                  child: Text(
-                    tabs[i],
-                    style: AppTextStyles.s12Medium.copyWith(
-                      color: selected ? ColorPalette.primaryTeal : ColorPalette.onSurfaceVariant,
-                    ),
-                  ),
+                  child: Text(tabs[i],
+                      style: AppTextStyles.s12Medium.copyWith(
+                          color: selected
+                              ? ColorPalette.primaryTeal
+                              : ColorPalette.onSurfaceVariant)),
                 ),
               ),
             ),
@@ -233,8 +254,7 @@ class _DocumentsPageState extends State<DocumentsPage>
   Widget _buildSection({
     required String title,
     required Color accentColor,
-    required List<Widget> children,
-    List<_CertCard> certCards = const [],
+    required List<DocumentItem> items,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,63 +265,77 @@ class _DocumentsPageState extends State<DocumentsPage>
               width: 6,
               height: 22,
               decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(99),
-              ),
+                  color: accentColor,
+                  borderRadius: BorderRadius.circular(99)),
             ),
             const SizedBox(width: 10),
             Text(title,
-                style: AppTextStyles.s14SemiBold.copyWith(color: ColorPalette.onSurface)),
+                style: AppTextStyles.s14SemiBold
+                    .copyWith(color: ColorPalette.onSurface)),
           ],
         ),
         const SizedBox(height: 12),
-        if (children.isNotEmpty)
-          Container(
-            decoration: BoxDecoration(
-              color: ColorPalette.surfaceContainer,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
-            ),
-            child: Column(
-              children: List.generate(children.length, (i) {
-                return Column(
-                  children: [
-                    children[i],
-                    if (i < children.length - 1)
-                      Divider(
+        Container(
+          decoration: BoxDecoration(
+            color: ColorPalette.surfaceContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+                width: 1),
+          ),
+          child: Column(
+            children: List.generate(items.length, (i) {
+              return Column(
+                children: [
+                  _DocRowTile(item: items[i]),
+                  if (i < items.length - 1)
+                    Divider(
                         height: 1,
                         indent: 56,
-                        color: ColorPalette.outlineVariant.withValues(alpha: 0.2),
-                      ),
-                  ],
-                );
-              }),
-            ),
+                        color: ColorPalette.outlineVariant.withValues(alpha: 0.2)),
+                ],
+              );
+            }),
           ),
-        ...certCards,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCertSection(List<CertDocument> certs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 22,
+              decoration: BoxDecoration(
+                  color: ColorPalette.tertiaryTeal,
+                  borderRadius: BorderRadius.circular(99)),
+            ),
+            const SizedBox(width: 10),
+            Text('Certificates & Compliance',
+                style: AppTextStyles.s14SemiBold
+                    .copyWith(color: ColorPalette.onSurface)),
+          ],
+        ),
+        ...certs.map((c) => _CertCard(doc: c)),
       ],
     );
   }
 }
 
-
 class _DocRowTile extends StatelessWidget {
-  final String asset;
-  final String title;
-  final String subtitle;
-  final String? statusLabel;
-  final Color? statusColor;
-
-  const _DocRowTile({
-    required this.asset,
-    required this.title,
-    required this.subtitle,
-    this.statusLabel,
-    this.statusColor,
-  });
+  final DocumentItem item;
+  const _DocRowTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
+    final statusLabel = item.status.label;
+    final statusColor = item.status.color;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
@@ -310,19 +344,14 @@ class _DocRowTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: ColorPalette.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
-            ),
+                color: ColorPalette.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(8)),
             child: Center(
-              child: SvgPicture.asset(
-                asset,
-                width: 18,
-                height: 18,
-                colorFilter: const ColorFilter.mode(
-                  ColorPalette.primaryTealFixedDim,
-                  BlendMode.srcIn,
-                ),
-              ),
+              child: SvgPicture.asset(item.iconAsset,
+                  width: 18,
+                  height: 18,
+                  colorFilter: const ColorFilter.mode(
+                      ColorPalette.primaryTealFixedDim, BlendMode.srcIn)),
             ),
           ),
           const SizedBox(width: 12),
@@ -330,12 +359,14 @@ class _DocRowTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: AppTextStyles.s13Medium.copyWith(color: ColorPalette.onSurface)),
-                if (subtitle.isNotEmpty) ...[
+                Text(item.title,
+                    style: AppTextStyles.s13Medium
+                        .copyWith(color: ColorPalette.onSurface)),
+                if (item.subtitle.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: AppTextStyles.s11Regular.copyWith(color: ColorPalette.onSurfaceDim)),
+                  Text(item.subtitle,
+                      style: AppTextStyles.s11Regular
+                          .copyWith(color: ColorPalette.onSurfaceDim)),
                 ],
               ],
             ),
@@ -345,11 +376,11 @@ class _DocRowTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor!.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Text(statusLabel!,
-                  style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
+                  color: statusColor!.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(99)),
+              child: Text(statusLabel,
+                  style:
+                      AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
             ),
             const SizedBox(width: 8),
           ],
@@ -358,19 +389,14 @@ class _DocRowTile extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: ColorPalette.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
-            ),
+                color: ColorPalette.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(8)),
             child: Center(
-              child: SvgPicture.asset(
-                ImageResources.icDownload,
-                width: 16,
-                height: 16,
-                colorFilter: const ColorFilter.mode(
-                  ColorPalette.primaryTeal,
-                  BlendMode.srcIn,
-                ),
-              ),
+              child: SvgPicture.asset(ImageResources.icDownload,
+                  width: 16,
+                  height: 16,
+                  colorFilter: const ColorFilter.mode(
+                      ColorPalette.primaryTeal, BlendMode.srcIn)),
             ),
           ),
         ],
@@ -380,32 +406,25 @@ class _DocRowTile extends StatelessWidget {
 }
 
 class _CertCard extends StatelessWidget {
-  final String asset;
-  final String title;
-  final String subtitle;
-  final Color accentColor;
-
-  const _CertCard({
-    required this.asset,
-    required this.title,
-    required this.subtitle,
-    required this.accentColor,
-  });
+  final CertDocument doc;
+  const _CertCard({required this.doc});
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accentColor(doc.accentTokenName);
     return Container(
       margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: ColorPalette.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
+        border: Border.all(
+            color: ColorPalette.outlineVariant.withValues(alpha: 0.15),
+            width: 1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Stack(
           children: [
-            // Corner accent
             Positioned(
               top: 0,
               right: 0,
@@ -413,10 +432,9 @@ class _CertCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.07),
+                  color: accent.withValues(alpha: 0.07),
                   borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(56),
-                  ),
+                      bottomLeft: Radius.circular(56)),
                 ),
               ),
             ),
@@ -425,29 +443,30 @@ class _CertCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SvgPicture.asset(
-                    asset,
-                    width: 26,
-                    height: 26,
-                    colorFilter: ColorFilter.mode(accentColor, BlendMode.srcIn),
-                  ),
+                  SvgPicture.asset(doc.iconAsset,
+                      width: 26,
+                      height: 26,
+                      colorFilter:
+                          ColorFilter.mode(accent, BlendMode.srcIn)),
                   const SizedBox(height: 12),
-                  Text(title,
-                      style: AppTextStyles.s14SemiBold.copyWith(color: ColorPalette.onSurface)),
+                  Text(doc.title,
+                      style: AppTextStyles.s14SemiBold
+                          .copyWith(color: ColorPalette.onSurface)),
                   const SizedBox(height: 3),
-                  Text(subtitle,
-                      style: AppTextStyles.s12Regular.copyWith(color: ColorPalette.onSurfaceVariant)),
+                  Text(doc.subtitle,
+                      style: AppTextStyles.s12Regular
+                          .copyWith(color: ColorPalette.onSurfaceVariant)),
                   const SizedBox(height: 14),
                   Container(
                     height: 40,
                     decoration: BoxDecoration(
                       color: ColorPalette.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: ColorPalette.outlineVariant, width: 1),
+                      border: Border.all(color: ColorPalette.outlineVariant),
                     ),
                     child: Center(
                       child: Text('View Certificate',
-                          style: AppTextStyles.s13Medium.copyWith(color: accentColor)),
+                          style: AppTextStyles.s13Medium.copyWith(color: accent)),
                     ),
                   ),
                 ],
@@ -474,19 +493,17 @@ class _GradientFab extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: ColorPalette.primaryTeal.withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
+              color: ColorPalette.primaryTeal.withValues(alpha: 0.25),
+              blurRadius: 24,
+              offset: const Offset(0, 8))
         ],
       ),
       child: Center(
-        child: SvgPicture.asset(
-          ImageResources.icNewDocUploaded,
-          width: 26,
-          height: 26,
-          colorFilter: const ColorFilter.mode(ColorPalette.onPrimaryTeal, BlendMode.srcIn),
-        ),
+        child: SvgPicture.asset(ImageResources.icNewDocUploaded,
+            width: 26,
+            height: 26,
+            colorFilter: const ColorFilter.mode(
+                ColorPalette.onPrimaryTeal, BlendMode.srcIn)),
       ),
     );
   }

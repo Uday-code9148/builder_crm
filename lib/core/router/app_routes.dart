@@ -1,6 +1,7 @@
 class Routes {
   static const splash = '/';
   static const login = '/login';
+  static const signIn = '/sign-in';
   static const signUp = '/sign-up';
   static const confirmSignUp = '/confirm-sign-up';
   static const forgotPassword = '/forgot-password';

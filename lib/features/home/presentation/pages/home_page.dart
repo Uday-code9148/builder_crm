@@ -10,8 +10,9 @@ import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_
 import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/sign_out/sign_out_cubit.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/pages/documents_page.dart';
-import 'package:temp_architecture_app_setup/features/home/presentation/pages/dashboard_page.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:temp_architecture_app_setup/features/payments/presentation/pages/payments_page.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/pages/support_page.dart';
 import 'package:temp_architecture_app_setup/features/updates/presentation/pages/updates_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -40,7 +41,7 @@ class _HomeShellState extends State<_HomeShell> {
     _TabItem(label: 'Home',      asset: ImageResources.icHome),
     _TabItem(label: 'Payments',  asset: ImageResources.icPayments),
     _TabItem(label: 'Documents', asset: ImageResources.icDocuments),
-    _TabItem(label: 'Updates',   asset: ImageResources.icUpdates),
+    _TabItem(label: 'Tickets',   asset: ImageResources.icUpdates),
     _TabItem(label: 'More',      asset: ImageResources.icMore),
   ];
 
@@ -57,7 +58,7 @@ class _HomeShellState extends State<_HomeShell> {
             DashboardPage(),
             PaymentsPage(),
             DocumentsPage(),
-            UpdatesPage(),
+            SupportPage(),
             _MorePage(),
           ],
         ),
@@ -181,6 +182,10 @@ class _MorePage extends StatelessWidget {
                     subtitle: 'Track construction progress',
                     badge: '65%',
                     badgeColor: ColorPalette.warningAmber,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UpdatesPage()),
+                    ),
                   ),
                   _MoreOption(
                     icon: Icons.photo_library_outlined,
@@ -401,6 +406,7 @@ class _MoreOption {
   final String subtitle;
   final String? badge;
   final Color? badgeColor;
+  final VoidCallback? onTap;
 
   const _MoreOption({
     required this.icon,
@@ -408,6 +414,7 @@ class _MoreOption {
     required this.subtitle,
     this.badge,
     this.badgeColor,
+    this.onTap,
   });
 }
 
@@ -417,7 +424,10 @@ class _MoreOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return GestureDetector(
+      onTap: option.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
@@ -461,7 +471,7 @@ class _MoreOptionTile extends StatelessWidget {
           const Icon(Icons.chevron_right, size: 18, color: ColorPalette.onSurfaceDim),
         ],
       ),
-    );
+    ));
   }
 }
 

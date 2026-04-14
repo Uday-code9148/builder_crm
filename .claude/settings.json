@@ -12,7 +12,8 @@
       "Read(//c/Users/udayl/Downloads/stitch_buyer_self_service_app/stitch_buyer_self_service_app/**)",
       "Read(//c/Users/udayl/Downloads/Builder CRM Mobile App/**)",
       "Read(//c/Users/udayl/Downloads/**)",
-      "Bash(grep -E \"\\\\.svg$\")"
+      "Bash(grep -E \"\\\\.svg$\")",
+      "Bash(dart analyze:*)"
     ]
   }
 }

@@ -150,7 +150,7 @@ class _LoginViewState extends State<_LoginView> {
                     _OutlineButton(
                       label: 'Sign in with Email',
                       icon: Icons.email_outlined,
-                      onTap: () => context.push(Routes.signUp),
+                      onTap: () => context.push(Routes.signIn),
                     ),
                     const SizedBox(height: 32),
                     // Terms
