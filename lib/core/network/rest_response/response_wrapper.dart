@@ -22,7 +22,12 @@ class ResponseWrapper<T> {
       parsed = fromJsonT(raw);
     }
 
-    return ResponseWrapper(succeeded: json['succeeded'] as bool? ?? false, message: json['message'] as String?, errors: json['errors'] != null ? List<String>.from(json['errors'] as List) : null, data: parsed);
+    return ResponseWrapper(
+      succeeded: json['succeeded'] as bool? ?? false,
+      message: json['message'] as String?,
+      errors: json['errors'] != null ? List<String>.from(json['errors'] as List) : null,
+      data: parsed,
+    );
   }
 }
 

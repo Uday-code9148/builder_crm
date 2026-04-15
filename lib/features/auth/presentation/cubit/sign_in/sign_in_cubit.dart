@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/app_loading_dialog.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/app_snackbar.dart';
+import 'package:temp_architecture_app_setup/core/enums/snackbar_type.dart';
 import 'package:temp_architecture_app_setup/core/error/failures.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/models/request_models/sign_in_model.dart';
 import 'package:temp_architecture_app_setup/features/auth/domain/usecases/sign_in_usecase.dart';

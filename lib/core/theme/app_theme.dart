@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/app_color_tokens.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 
@@ -9,15 +10,12 @@ class AppTheme {
   static final ThemeData darkTheme = ThemeData.dark(useMaterial3: true).copyWith(
     scaffoldBackgroundColor: ColorPalette.surface,
     splashFactory: NoSplash.splashFactory,
-    highlightColor: Colors.transparent,
+    highlightColor: ColorPalette.transparent,
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
+      backgroundColor: ColorPalette.transparent,
       elevation: 0,
       centerTitle: false,
-      systemOverlayStyle: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-      ),
+      systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: ColorPalette.transparent, statusBarIconBrightness: Brightness.light),
       foregroundColor: ColorPalette.onSurface,
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -48,10 +46,7 @@ class AppTheme {
       checkColor: WidgetStatePropertyAll(ColorPalette.surface),
       fillColor: WidgetStatePropertyAll(ColorPalette.primaryTeal),
     ),
-    textTheme: GoogleFonts.lexendDecaTextTheme().apply(
-      bodyColor: ColorPalette.onSurface,
-      displayColor: ColorPalette.onSurface,
-    ),
+    textTheme: GoogleFonts.lexendDecaTextTheme().apply(bodyColor: ColorPalette.onSurface, displayColor: ColorPalette.onSurface),
     colorScheme: const ColorScheme(
       brightness: Brightness.dark,
       // Primary
@@ -99,20 +94,18 @@ class AppTheme {
       ),
       margin: EdgeInsets.zero,
     ),
-    dividerTheme: const DividerThemeData(
-      color: Colors.transparent,
-      space: 0,
-    ),
+    dividerTheme: const DividerThemeData(color: ColorPalette.transparent, space: 0),
     switchTheme: _switchTheme(),
     timePickerTheme: _timePickerTheme(),
     datePickerTheme: _datePickerTheme(),
+    extensions: const [AppColorTokens.dark],
   );
 
   // ─── Light (clean emerald) ──────────────────────────────────────────────────
   static final ThemeData lightTheme = ThemeData.light(useMaterial3: true).copyWith(
     scaffoldBackgroundColor: const Color(0xFFF4F6F5),
     splashFactory: NoSplash.splashFactory,
-    highlightColor: Colors.transparent,
+    highlightColor: ColorPalette.transparent,
     appBarTheme: const AppBarTheme(
       backgroundColor: ColorPalette.white,
       elevation: 0,
@@ -166,7 +159,7 @@ class AppTheme {
       surfaceContainerHighest: ColorPalette.gray200,
       surfaceContainerHigh: ColorPalette.gray100,
       surfaceContainer: ColorPalette.whiteSolid,
-      surfaceContainerLow: const Color(0xFFF0F4F3),
+      surfaceContainerLow: Color(0xFFF0F4F3),
       surfaceContainerLowest: ColorPalette.white,
       onSurfaceVariant: ColorPalette.gray700,
       error: ColorPalette.fadedRed,
@@ -188,25 +181,24 @@ class AppTheme {
       ),
       margin: EdgeInsets.zero,
     ),
-    dividerTheme: const DividerThemeData(color: Colors.transparent, space: 0),
+    dividerTheme: const DividerThemeData(color: ColorPalette.transparent, space: 0),
     switchTheme: _switchTheme(),
     timePickerTheme: _timePickerTheme(),
     datePickerTheme: _datePickerTheme(),
+    extensions: const [AppColorTokens.light],
   );
 
   // ─── Shared helpers ────────────────────────────────────────────────────────
 
-  static OutlineInputBorder _inputBorder([Color color = ColorPalette.outlineVariant]) =>
-      OutlineInputBorder(
-        borderSide: BorderSide(color: color, width: 1),
-        borderRadius: BorderRadius.circular(10),
-      );
+  static OutlineInputBorder _inputBorder([Color color = ColorPalette.outlineVariant]) => OutlineInputBorder(
+    borderSide: BorderSide(color: color, width: 1),
+    borderRadius: BorderRadius.circular(10),
+  );
 
-  static OutlineInputBorder _inputBorderLight([Color color = const Color(0xFFDDE4E2)]) =>
-      OutlineInputBorder(
-        borderSide: BorderSide(color: color, width: 1),
-        borderRadius: BorderRadius.circular(10),
-      );
+  static OutlineInputBorder _inputBorderLight([Color color = const Color(0xFFDDE4E2)]) => OutlineInputBorder(
+    borderSide: BorderSide(color: color, width: 1),
+    borderRadius: BorderRadius.circular(10),
+  );
 
   static SwitchThemeData _switchTheme() => SwitchThemeData(
     trackColor: WidgetStateProperty.resolveWith((states) {
@@ -219,7 +211,7 @@ class AppTheme {
       if (states.contains(WidgetState.selected)) return ColorPalette.primaryTeal;
       return ColorPalette.onSurfaceVariant;
     }),
-    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+    trackOutlineColor: const WidgetStatePropertyAll(ColorPalette.transparent),
   );
 
   static DatePickerThemeData _datePickerTheme() => DatePickerThemeData(

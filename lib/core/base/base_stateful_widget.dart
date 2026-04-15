@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/router/route_observer.dart';
 
 /// Base class for all stateful pages.
@@ -155,9 +156,16 @@ abstract class BaseState<T extends BaseStatefulWidget> extends State<T> with Wid
     if (!mounted) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
+    final backgroundColor = isConnected ? ColorPalette.primaryGreen : ColorPalette.red600;
     messenger
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(isConnected ? 'Back online' : 'No internet connection'), backgroundColor: isConnected ? Colors.green : Colors.red, duration: isConnected ? const Duration(seconds: 2) : const Duration(days: 1)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(isConnected ? 'Back online' : 'No internet connection'),
+          backgroundColor: backgroundColor,
+          duration: isConnected ? const Duration(seconds: 2) : const Duration(days: 1),
+        ),
+      );
   }
 
   // ---------------------------------------------------------------------------

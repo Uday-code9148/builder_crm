@@ -57,17 +57,13 @@ extension DateTimeExtension on DateTime? {
   /// Full UTC conversion preserving all time components.
   DateTime? toUtc() {
     if (this == null) return null;
-    return DateTime.utc(this!.year, this!.month, this!.day,
-        this!.hour, this!.minute, this!.second,
-        this!.millisecond, this!.microsecond);
+    return DateTime.utc(this!.year, this!.month, this!.day, this!.hour, this!.minute, this!.second, this!.millisecond, this!.microsecond);
   }
 
   /// Returns `true` if the date has changed relative to [referenceDate] (defaults to now).
   bool hasDayChanged({DateTime? referenceDate}) {
     if (this == null) return true;
     final ref = referenceDate ?? DateTime.now();
-    return ref.year != this!.year ||
-        ref.month != this!.month ||
-        ref.day != this!.day;
+    return ref.year != this!.year || ref.month != this!.month || ref.day != this!.day;
   }
 }

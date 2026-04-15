@@ -2,42 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/sign_in/sign_in_cubit.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends BaseStatelessWidget {
   const LoginPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<SignInCubit>(),
-      child: const _LoginView(),
-    );
+  Widget buildContent(BuildContext context) {
+    return BlocProvider(create: (_) => getIt<SignInCubit>(), child: const _LoginView());
   }
 }
 
-class _LoginView extends StatefulWidget {
+class _LoginView extends BaseStatefulWidget {
   const _LoginView();
 
   @override
   State<_LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<_LoginView> {
+class _LoginViewState extends BaseState<_LoginView> {
   final _phoneController = TextEditingController();
 
   @override
-  void dispose() {
+  void onDispose() {
     _phoneController.dispose();
-    super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return BlocListener<SignInCubit, SignInState>(
       listener: (context, state) {
         if (state.canGoHome) context.go(Routes.home);
@@ -56,10 +54,7 @@ class _LoginViewState extends State<_LoginView> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      ColorPalette.primaryTealFixed.withValues(alpha: 0.30),
-                      ColorPalette.surface,
-                    ],
+                    colors: [ColorPalette.primaryTealFixed.withValues(alpha: 0.30), ColorPalette.surface],
                     stops: const [0.0, 0.55],
                   ),
                 ),
@@ -81,38 +76,22 @@ class _LoginViewState extends State<_LoginView> {
                         decoration: BoxDecoration(
                           color: ColorPalette.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
+                          border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.3), width: 1),
                         ),
                         child: Center(
-                          child: Text(
-                            'PH',
-                            style: AppTextStyles.s18Bold.copyWith(
-                              color: ColorPalette.primaryTeal,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
+                          child: Text('PH', style: AppTextStyles.s18Bold.copyWith(color: ColorPalette.primaryTeal, letterSpacing: -0.5)),
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
                     Text(
                       'Welcome to\nPrestige Homes',
-                      style: AppTextStyles.s24Bold.copyWith(
-                        color: ColorPalette.onSurface,
-                        letterSpacing: -0.02 * 24,
-                        height: 1.2,
-                      ),
+                      style: AppTextStyles.s24Bold.copyWith(color: ColorPalette.onSurface, letterSpacing: -0.02 * 24, height: 1.2),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Curation of architectural\nmasterpieces awaits.',
-                      style: AppTextStyles.s14Regular.copyWith(
-                        color: ColorPalette.onSurfaceVariant,
-                        height: 1.5,
-                      ),
+                      style: AppTextStyles.s14Regular.copyWith(color: ColorPalette.onSurfaceVariant, height: 1.5),
                     ),
                     const SizedBox(height: 40),
                     // Phone number field
@@ -123,10 +102,7 @@ class _LoginViewState extends State<_LoginView> {
                       label: 'Send OTP',
                       onTap: () {
                         if (_phoneController.text.trim().isNotEmpty) {
-                          context.push(
-                            Routes.confirmSignUp,
-                            extra: _phoneController.text.trim(),
-                          );
+                          context.push(Routes.confirmSignUp, extra: _phoneController.text.trim());
                         }
                       },
                     ),
@@ -137,42 +113,26 @@ class _LoginViewState extends State<_LoginView> {
                         Expanded(child: Divider(color: ColorPalette.outlineVariant.withValues(alpha: 0.4), height: 1)),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'or',
-                            style: AppTextStyles.s13Regular.copyWith(color: ColorPalette.onSurfaceDim),
-                          ),
+                          child: Text('or', style: AppTextStyles.s13Regular.copyWith(color: ColorPalette.onSurfaceDim)),
                         ),
                         Expanded(child: Divider(color: ColorPalette.outlineVariant.withValues(alpha: 0.4), height: 1)),
                       ],
                     ),
                     const SizedBox(height: 20),
                     // Sign in with Email
-                    _OutlineButton(
-                      label: 'Sign in with Email',
-                      icon: Icons.email_outlined,
-                      onTap: () => context.push(Routes.signUp),
-                    ),
+                    _OutlineButton(label: 'Sign in with Email', icon: Icons.email_outlined, onTap: () => context.push(Routes.signIn)),
                     const SizedBox(height: 32),
                     // Terms
                     Text(
                       'By continuing, you agree to our Terms of Service and Privacy Policy. Prestige Homes is a licensed architectural curator.',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.s11Regular.copyWith(
-                        color: ColorPalette.onSurfaceDim,
-                        height: 1.6,
-                      ),
+                      style: AppTextStyles.s11Regular.copyWith(color: ColorPalette.onSurfaceDim, height: 1.6),
                     ),
                     const SizedBox(height: 40),
                     // City names
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _CityLabel('LONDON'),
-                        _CityDivider(),
-                        _CityLabel('DUBAI'),
-                        _CityDivider(),
-                        _CityLabel('MUMBAI'),
-                      ],
+                      children: [_CityLabel('LONDON'), _CityDivider(), _CityLabel('DUBAI'), _CityDivider(), _CityLabel('MUMBAI')],
                     ),
                     const SizedBox(height: 32),
                   ],
@@ -188,6 +148,7 @@ class _LoginViewState extends State<_LoginView> {
 
 class _PhoneField extends StatelessWidget {
   final TextEditingController controller;
+
   const _PhoneField({required this.controller});
 
   @override
@@ -207,10 +168,7 @@ class _PhoneField extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border(right: BorderSide(color: ColorPalette.outlineVariant, width: 1)),
             ),
-            child: Text(
-              '+91',
-              style: AppTextStyles.s14Medium.copyWith(color: ColorPalette.onSurface),
-            ),
+            child: Text('+91', style: AppTextStyles.s14Medium.copyWith(color: ColorPalette.onSurface)),
           ),
           // Phone input
           Expanded(
@@ -259,19 +217,10 @@ class _GradientButton extends StatelessWidget {
               transform: GradientRotation(2.356), // 135°
             ),
             borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
-                blurRadius: 32,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25), blurRadius: 32, offset: const Offset(0, 12))],
           ),
           child: Center(
-            child: Text(
-              label,
-              style: AppTextStyles.s15SemiBold.copyWith(color: ColorPalette.onPrimaryTeal),
-            ),
+            child: Text(label, style: AppTextStyles.s15SemiBold.copyWith(color: ColorPalette.onPrimaryTeal)),
           ),
         ),
       ),
@@ -302,10 +251,7 @@ class _OutlineButton extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: ColorPalette.primaryTeal),
             const SizedBox(width: 10),
-            Text(
-              label,
-              style: AppTextStyles.s14Medium.copyWith(color: ColorPalette.onSurface),
-            ),
+            Text(label, style: AppTextStyles.s14Medium.copyWith(color: ColorPalette.onSurface)),
           ],
         ),
       ),
@@ -315,17 +261,12 @@ class _OutlineButton extends StatelessWidget {
 
 class _CityLabel extends StatelessWidget {
   final String city;
+
   const _CityLabel(this.city);
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      city,
-      style: AppTextStyles.s10Regular.copyWith(
-        color: ColorPalette.onSurfaceDim,
-        letterSpacing: 2.0,
-      ),
-    );
+    return Text(city, style: AppTextStyles.s10Regular.copyWith(color: ColorPalette.onSurfaceDim, letterSpacing: 2.0));
   }
 }
 

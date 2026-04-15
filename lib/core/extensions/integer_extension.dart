@@ -30,10 +30,7 @@ extension IntegerExtension on int {
 
   /// `1` → `'Jan'`, `12` → `'Dec'`.
   String get monthName {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     if (this < 1 || this > 12) return '';
     return months[this - 1];
   }

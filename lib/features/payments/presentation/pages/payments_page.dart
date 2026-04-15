@@ -1,51 +1,105 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
+import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
+import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
+import 'package:temp_architecture_app_setup/core/enums/payment_status.dart';
+import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
+import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
+import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment_entities.dart';
+import 'package:temp_architecture_app_setup/features/payments/presentation/blocs/payments_bloc/payment_bloc.dart';
+import 'package:temp_architecture_app_setup/features/payments/presentation/helpers/payment_breakdown_resolver.dart';
+import 'package:temp_architecture_app_setup/features/payments/presentation/widgets/payments_loading_skeleton.dart';
 
-class PaymentsPage extends StatefulWidget {
-  const PaymentsPage({super.key});
+// ── Page ───────────────────────────────────────────────────────────────────
+
+class PaymentsPage extends BaseStatefulWidget {
+  final String headerTitle;
+  final String? headerSubtitle;
+
+  const PaymentsPage({super.key, this.headerTitle = AppDisplayConstants.appTitle, this.headerSubtitle = AppDisplayConstants.unitLabel});
 
   @override
   State<PaymentsPage> createState() => _PaymentsPageState();
 }
 
-class _PaymentsPageState extends State<PaymentsPage>
-    with AutomaticKeepAliveClientMixin {
+class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAliveClientMixin {
+  String? _expandedId;
+
   @override
   bool get wantKeepAlive => true;
 
-  int _filterIndex = 0;
-  static const _filters = ['All', 'Paid', 'Due', 'Overdue', 'Upcoming'];
-
-  bool _expanded = false; // brickwork card expanded state
+  static const _filterLabels = ['All', 'Paid', 'Due', 'Overdue', 'Upcoming'];
+  static const _filterValues = [null, PaymentStatus.paid, PaymentStatus.pending, PaymentStatus.overdue, PaymentStatus.upcoming];
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    return Scaffold(
-      backgroundColor: ColorPalette.surface,
-      appBar: _buildAppBar(),
-      body: CustomScrollView(
+    super.build(context); // required by AutomaticKeepAliveClientMixin
+    return buildContent(context);
+  }
+
+  @override
+  Widget buildContent(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<PaymentBloc>()..add(const PaymentsLoadRequested()),
+      child: BlocBuilder<PaymentBloc, PaymentState>(
+        builder: (context, state) {
+          return Scaffold(backgroundColor: context.colors.surface, appBar: _buildAppBar(), body: _buildBody(context, state));
+        },
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return buildCuratorGlassAppBar(context: context, title: widget.headerTitle, subtitle: widget.headerSubtitle);
+  }
+
+  Widget _buildBody(BuildContext context, PaymentState state) {
+    final colors = context.colors;
+    if (state.status == DataStatus.loading) {
+      return const PaymentsLoadingSkeleton();
+    }
+    if (state.status == DataStatus.error) {
+      return Center(
+        child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
+      );
+    }
+    if (state.data == null) return const SizedBox.shrink();
+
+    final data = state.data!;
+    final items = state.filteredItems;
+    final summary = data.summary ?? const PaymentSummaryEntity();
+
+    return RefreshIndicator(
+      color: colors.primaryTeal,
+      notificationPredicate: (n) => n.depth == 0,
+      onRefresh: () async {
+        final bloc = context.read<PaymentBloc>();
+        bloc.add(const PaymentsLoadRequested());
+        try {
+          await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
+        } catch (_) {
+          // End the indicator even if the request fails/timeout.
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 20),
-                _buildSummary(),
+                _buildSummary(summary),
                 const SizedBox(height: 20),
-                _buildFilters(),
+                _buildFilters(context, state.activeFilter),
                 const SizedBox(height: 16),
-                _buildOverdueCard(),
-                const SizedBox(height: 12),
-                _buildBrickworkCard(),
-                const SizedBox(height: 12),
-                _buildFoundationCard(),
-                const SizedBox(height: 12),
-                _buildFinishingCard(),
+                ...items.map((item) => _buildPaymentCard(item)),
               ]),
             ),
           ),
@@ -54,85 +108,17 @@ class _PaymentsPageState extends State<PaymentsPage>
     );
   }
 
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      toolbarHeight: 64,
-      automaticallyImplyLeading: false,
-      titleSpacing: 0,
-      flexibleSpace: ClipRRect(
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: ColorPalette.surface.withValues(alpha: 0.92),
-              border: Border(
-                bottom: BorderSide(
-                  color: ColorPalette.outlineVariant.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      title: Row(
-        children: [
-          const SizedBox(width: 20),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: ColorPalette.primaryTealFixed,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: ColorPalette.onPrimaryTeal.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.home_work_rounded, size: 18, color: ColorPalette.white),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Architectural Curator',
-                  style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.onSurface)),
-              Text('UNIT 402 · SKY-VILLA',
-                  style: AppTextStyles.s10Regular.copyWith(
-                      color: ColorPalette.onSurfaceDim, letterSpacing: 1.2)),
-            ],
-          ),
-          const Spacer(),
-          const Icon(Icons.swap_horiz_rounded, color: ColorPalette.onSurfaceVariant, size: 20),
-          const SizedBox(width: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummary() {
+  Widget _buildSummary(PaymentSummaryEntity summary) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [ColorPalette.surfaceContainer, ColorPalette.surfaceContainerLow],
-        ),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [colors.surfaceContainer, colors.surfaceContainerLow]),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
       ),
       child: Stack(
         children: [
-          // Watermark icon
           Positioned(
             right: -8,
             bottom: -8,
@@ -140,24 +126,18 @@ class _PaymentsPageState extends State<PaymentsPage>
               ImageResources.icTotalOutstanding,
               width: 80,
               height: 80,
-              colorFilter: ColorFilter.mode(
-                ColorPalette.primaryTeal.withValues(alpha: 0.06),
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(colors.primaryTeal.withValues(alpha: 0.06), BlendMode.srcIn),
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Total Outstanding',
-                  style: AppTextStyles.s12Regular.copyWith(color: ColorPalette.onSurfaceVariant)),
+              Text('Total Outstanding', style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
               const SizedBox(height: 6),
-              Text('₹45,50,000',
-                  style: AppTextStyles.s24Bold.copyWith(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: ColorPalette.onSurface,
-                      letterSpacing: -0.5)),
+              Text(
+                summary.totalOutstanding ?? '--',
+                style: AppTextStyles.s24Bold.copyWith(fontSize: 32, fontWeight: FontWeight.w900, color: colors.onSurface, letterSpacing: -0.5),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -165,12 +145,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('PAID',
-                            style: AppTextStyles.s10Regular.copyWith(
-                                color: ColorPalette.onSurfaceDim, letterSpacing: 1)),
+                        Text('PAID', style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1)),
                         const SizedBox(height: 2),
-                        Text('₹1,25,00,000',
-                            style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.primaryTeal)),
+                        Text(summary.paid ?? '--', style: AppTextStyles.s13SemiBold.copyWith(color: colors.primaryTeal)),
                       ],
                     ),
                   ),
@@ -178,12 +155,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('NEXT DUE',
-                            style: AppTextStyles.s10Regular.copyWith(
-                                color: ColorPalette.onSurfaceDim, letterSpacing: 1)),
+                        Text('NEXT DUE', style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1)),
                         const SizedBox(height: 2),
-                        Text('₹15,00,000',
-                            style: AppTextStyles.s13SemiBold.copyWith(color: ColorPalette.warningAmber)),
+                        Text(summary.nextDue ?? '--', style: AppTextStyles.s13SemiBold.copyWith(color: colors.warningAmber)),
                       ],
                     ),
                   ),
@@ -196,33 +170,29 @@ class _PaymentsPageState extends State<PaymentsPage>
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(BuildContext context, PaymentStatus? activeFilter) {
+    final colors = context.colors;
     return SizedBox(
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _filters.length,
+        itemCount: _filterLabels.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
-          final selected = i == _filterIndex;
+          final selected = _filterValues[i] == activeFilter;
           return GestureDetector(
-            onTap: () => setState(() => _filterIndex = i),
+            onTap: () => context.read<PaymentBloc>().add(PaymentsFilterChanged(_filterValues[i])),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
               decoration: BoxDecoration(
-                color: selected ? ColorPalette.primaryTealContainer : ColorPalette.surfaceContainer,
+                color: selected ? colors.primaryTealContainer : colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(99),
-                border: Border.all(
-                  color: selected ? Colors.transparent : ColorPalette.outlineVariant,
-                  width: 1,
-                ),
+                border: Border.all(color: selected ? ColorPalette.transparent : colors.outlineVariant, width: 1),
               ),
               child: Text(
-                _filters[i],
-                style: AppTextStyles.s12Medium.copyWith(
-                  color: selected ? ColorPalette.onPrimaryTealContainer : ColorPalette.onSurfaceVariant,
-                ),
+                _filterLabels[i],
+                style: AppTextStyles.s12Medium.copyWith(color: selected ? colors.onPrimaryTealContainer : colors.onSurfaceVariant),
               ),
             ),
           );
@@ -231,227 +201,152 @@ class _PaymentsPageState extends State<PaymentsPage>
     );
   }
 
-  Widget _buildOverdueCard() {
-    return _PaymentCard(
-      stage: 'Slab 08 Completion',
-      subtitle: '8th Floor Structural Work',
-      badge: 'OVERDUE',
-      badgeColor: ColorPalette.overdueRed,
-      label: 'AMOUNT DUE',
-      amount: '₹15,00,000',
-      dateLabel: 'DUE 12 OCT 2023',
-      dateColor: ColorPalette.overdueRed,
-      actionLabel: 'View Details',
-      actionIcon: Icons.keyboard_arrow_down_rounded,
-      leftAccentColor: ColorPalette.overdueRed,
-    );
-  }
+  Widget _buildPaymentCard(PaymentItemEntity item) {
+    final colors = context.colors;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final status = item.status ?? PaymentStatus.upcoming;
+    final statusColor = status.color;
+    final isExpanded = _expandedId == item.id;
+    final actionLabel = item.actionLabel ?? '';
+    final canOpenDetails = actionLabel.isNotEmpty || (item.breakdown?.isNotEmpty ?? false);
+    final detailRows = PaymentBreakdownResolver.resolve(item);
 
-  Widget _buildBrickworkCard() {
     return Column(
       children: [
-        _PaymentCard(
-          stage: 'Brickwork Level 04',
-          subtitle: 'Internal & External Masonry',
-          badge: 'PENDING',
-          badgeColor: ColorPalette.pendingTeal,
-          label: 'AMOUNT DUE',
-          amount: '₹12,50,000',
-          dateLabel: 'DUE 28 NOV 2023',
-          dateColor: ColorPalette.pendingTeal,
-          actionLabel: 'Pay Now',
-          actionIcon: Icons.open_in_new_rounded,
-          leftAccentColor: ColorPalette.pendingTeal,
-          onTap: () => setState(() => _expanded = !_expanded),
-        ),
-        if (_expanded)
-          Container(
-            margin: const EdgeInsets.only(top: 2),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            decoration: BoxDecoration(
-              color: ColorPalette.surfaceContainerHigh,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-              border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
-            ),
-            child: Column(
-              children: [
-                _BreakdownItem('Principal Amount', '₹11,16,071'),
-                const SizedBox(height: 6),
-                _BreakdownItem('GST (12%)', '₹1,33,929'),
-                const SizedBox(height: 6),
-                _BreakdownItem('TDS (1%)', '- ₹11,160'),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: ColorPalette.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline_rounded, size: 12, color: ColorPalette.onSurfaceDim),
-                      const SizedBox(width: 6),
-                      Text('Payment via RTGS/NEFT only.',
-                          style: AppTextStyles.s11Regular.copyWith(color: ColorPalette.onSurfaceDim)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        Container(
+          margin: const EdgeInsets.only(bottom: 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.vertical(top: const Radius.circular(12), bottom: Radius.circular(isExpanded ? 0 : 12)),
           ),
-      ],
-    );
-  }
-
-  Widget _buildFoundationCard() {
-    return _PaymentCard(
-      stage: 'Foundation Completion',
-      subtitle: 'Raft & Piling Work Finished',
-      badge: 'PAID',
-      badgeColor: ColorPalette.paidGreen,
-      label: 'AMOUNT PAID',
-      amount: '₹18,00,000',
-      dateLabel: '15 SEP 2023',
-      dateColor: ColorPalette.onSurfaceVariant,
-      actionLabel: 'Receipt',
-      actionIcon: Icons.download_rounded,
-      leftAccentColor: ColorPalette.paidGreen,
-    );
-  }
-
-  Widget _buildFinishingCard() {
-    return _PaymentCard(
-      stage: 'Finishing & Plaster',
-      subtitle: 'Stage 12 of 15',
-      badge: 'UPCOMING',
-      badgeColor: ColorPalette.upcomingGrey,
-      label: 'EST. AMOUNT',
-      amount: '₹8,00,000',
-      dateLabel: 'JAN 2024',
-      dateColor: ColorPalette.onSurfaceDim,
-      actionLabel: '',
-      actionIcon: null,
-      leftAccentColor: ColorPalette.upcomingGrey,
-    );
-  }
-}
-
-class _PaymentCard extends StatelessWidget {
-  final String stage;
-  final String subtitle;
-  final String badge;
-  final Color badgeColor;
-  final String label;
-  final String amount;
-  final String dateLabel;
-  final Color dateColor;
-  final String actionLabel;
-  final IconData? actionIcon;
-  final Color leftAccentColor;
-  final VoidCallback? onTap;
-
-  const _PaymentCard({
-    required this.stage,
-    required this.subtitle,
-    required this.badge,
-    required this.badgeColor,
-    required this.label,
-    required this.amount,
-    required this.dateLabel,
-    required this.dateColor,
-    required this.actionLabel,
-    required this.actionIcon,
-    required this.leftAccentColor,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: ColorPalette.surfaceContainer,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: ColorPalette.outlineVariant.withValues(alpha: 0.15), width: 1),
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Left accent
-              Container(
-                width: 6,
-                decoration: BoxDecoration(
-                  color: leftAccentColor,
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.vertical(top: const Radius.circular(12), bottom: Radius.circular(isExpanded ? 0 : 12)),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDarkMode ? const [Color(0xFF131A1C), Color(0xFF15282A)] : [colors.surfaceContainer, colors.surfaceContainerLow],
                 ),
+                border: Border.all(color: statusColor.withValues(alpha: 0.22), width: 1),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(stage,
-                                style: AppTextStyles.s14SemiBold.copyWith(color: ColorPalette.onSurface)),
-                          ),
-                          _Badge(label: badge, color: badgeColor),
-                        ],
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
                       ),
-                      const SizedBox(height: 2),
-                      Text(subtitle,
-                          style: AppTextStyles.s11Regular.copyWith(color: ColorPalette.onSurfaceDim)),
-                      const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(label,
-                                  style: AppTextStyles.s10Regular.copyWith(
-                                      color: ColorPalette.onSurfaceDim, letterSpacing: 0.5)),
-                              const SizedBox(height: 2),
-                              Text(amount,
-                                  style: AppTextStyles.s16SemiBold.copyWith(
-                                      color: ColorPalette.onSurface, letterSpacing: -0.3)),
-                            ],
-                          ),
-                          const Spacer(),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(dateLabel,
-                                  style: AppTextStyles.s11SemiBold.copyWith(color: dateColor)),
-                              if (actionLabel.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Row(
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(item.stage ?? '--', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
+                                ),
+                                _Badge(label: status.label, color: statusColor),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(item.subtitle ?? '--', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceVariant)),
+                            const SizedBox(height: 12),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(actionLabel,
-                                        style: AppTextStyles.s12Medium.copyWith(
-                                            color: ColorPalette.primaryTeal)),
-                                    if (actionIcon != null) ...[
-                                      const SizedBox(width: 2),
-                                      Icon(actionIcon, size: 12, color: ColorPalette.primaryTeal),
+                                    Text(
+                                      (item.amountLabel ?? '--').toUpperCase(),
+                                      style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 0.9),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(item.amount ?? '--', style: AppTextStyles.s16SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.3)),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text((item.dateLabel ?? '--').toUpperCase(), style: AppTextStyles.s11SemiBold.copyWith(color: colors.onSurfaceVariant)),
+                                    if (actionLabel.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      GestureDetector(
+                                        onTap: canOpenDetails
+                                            ? () => setState(() {
+                                                _expandedId = isExpanded ? null : item.id;
+                                              })
+                                            : null,
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Row(
+                                          children: [
+                                            Text(actionLabel, style: AppTextStyles.s12Medium.copyWith(color: ColorPalette.primaryTealFixed)),
+                                            const SizedBox(width: 2),
+                                            Icon(
+                                              isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                              size: 14,
+                                              color: ColorPalette.primaryTealFixed,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                   ],
                                 ),
                               ],
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: isExpanded
+              ? Container(
+                  key: ValueKey('expanded_${item.id ?? ''}'),
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1B2426) : colors.surfaceContainerLow,
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.2), width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      ...detailRows.map(
+                        (b) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _ExpandedDetailRow(label: b.label ?? '--', value: b.value ?? '--'),
+                        ),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? colors.white.withValues(alpha: 0.1) : colors.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('Payment via RTGS/NEFT only.', style: AppTextStyles.s11Regular.copyWith(color: colors.primaryTeal)),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
+                )
+              : const SizedBox.shrink(),
         ),
-      ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -459,42 +354,35 @@ class _PaymentCard extends StatelessWidget {
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
+
   const _Badge({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(label,
-          style: AppTextStyles.s9SemiBold.copyWith(color: color, letterSpacing: 0.5)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(99)),
+      child: Text(label, style: AppTextStyles.s9SemiBold.copyWith(color: color, letterSpacing: 0.5)),
     );
   }
 }
 
-class _BreakdownItem extends StatelessWidget {
+class _ExpandedDetailRow extends StatelessWidget {
   final String label;
   final String value;
-  const _BreakdownItem(this.label, this.value);
+
+  const _ExpandedDetailRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: ColorPalette.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTextStyles.s12Regular.copyWith(color: ColorPalette.onSurfaceVariant)),
-          Text(value, style: AppTextStyles.s12Medium.copyWith(color: ColorPalette.onSurface)),
-        ],
-      ),
+    final colors = context.colors;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label, style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
+        ),
+        Text(value, style: AppTextStyles.s13SemiBold.copyWith(color: colors.onSurface)),
+      ],
     );
   }
 }

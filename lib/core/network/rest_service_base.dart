@@ -122,13 +122,17 @@ abstract class RestServiceBase {
 
   // ─── Request factory helpers ───────────────────────────────────────────────
 
-  RestRequest get(String path, {Map<String, dynamic>? query, CancelToken? cancelToken}) => RestRequest(path, method: RequestMethod.get, queryParameters: query, cancelToken: cancelToken);
+  RestRequest get(String path, {Map<String, dynamic>? query, CancelToken? cancelToken}) =>
+      RestRequest(path, method: RequestMethod.get, queryParameters: query, cancelToken: cancelToken);
 
-  RestRequest post(String path, {dynamic body, Map<String, dynamic>? query, CancelToken? cancelToken}) => RestRequest(path, body: body, method: RequestMethod.post, queryParameters: query, cancelToken: cancelToken);
+  RestRequest post(String path, {dynamic body, Map<String, dynamic>? query, CancelToken? cancelToken}) =>
+      RestRequest(path, body: body, method: RequestMethod.post, queryParameters: query, cancelToken: cancelToken);
 
-  RestRequest put(String path, {dynamic body, Map<String, dynamic>? query, CancelToken? cancelToken}) => RestRequest(path, body: body, method: RequestMethod.put, queryParameters: query, cancelToken: cancelToken);
+  RestRequest put(String path, {dynamic body, Map<String, dynamic>? query, CancelToken? cancelToken}) =>
+      RestRequest(path, body: body, method: RequestMethod.put, queryParameters: query, cancelToken: cancelToken);
 
-  RestRequest delete(String path, {dynamic body, Map<String, dynamic>? query, CancelToken? cancelToken}) => RestRequest(path, body: body, method: RequestMethod.delete, queryParameters: query, cancelToken: cancelToken);
+  RestRequest delete(String path, {dynamic body, Map<String, dynamic>? query, CancelToken? cancelToken}) =>
+      RestRequest(path, body: body, method: RequestMethod.delete, queryParameters: query, cancelToken: cancelToken);
 
   /// Cancels all in-flight requests — call on sign-out.
   static void cancelAll([String reason = 'Cancelled']) {

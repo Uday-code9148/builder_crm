@@ -47,9 +47,7 @@ extension StringExtension on String {
   }
 
   /// Returns the string in Title Case.
-  String toTitleCase() => split(' ')
-      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
-      .join(' ');
+  String toTitleCase() => split(' ').map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}').join(' ');
 
   /// Converts a hex color string (e.g. `#RRGGBB`) to `0xFFRRGGBB` format.
   String toHexColorCode() => '0xFF${replaceAll('#', '')}';
@@ -80,12 +78,11 @@ extension NullableStringExtension on String? {
       if (atIdx == -1) return v;
       final local = v.substring(0, atIdx);
       final domain = v.substring(atIdx + 1);
-      final maskedLocal = local.length <= 2
-          ? '${local[0]}X'
-          : '${local[0]}${'X' * (local.length - 2)}${local[local.length - 1]}';
+      final maskedLocal = local.length <= 2 ? '${local[0]}X' : '${local[0]}${'X' * (local.length - 2)}${local[local.length - 1]}';
       final domainParts = domain.split('.').where((e) => e.isNotEmpty).toList();
       if (domainParts.isEmpty) return '$maskedLocal@****';
-      final maskedDomain = '${domainParts[0][0]}${'X' * (domainParts[0].length - 1)}'
+      final maskedDomain =
+          '${domainParts[0][0]}${'X' * (domainParts[0].length - 1)}'
           '${domainParts.length > 1 ? '.${domainParts.last}' : ''}';
       return '$maskedLocal@$maskedDomain';
     } catch (_) {

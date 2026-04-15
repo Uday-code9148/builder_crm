@@ -35,17 +35,14 @@ class AppLoadingDialog {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
             child: Material(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: ColorPalette.black.withValues(alpha: 0.3),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const CircularProgressIndicator(color: ColorPalette.primaryGreen),
                     const SizedBox(height: 16),
-                    Text(
-                      message,
-                      style: AppTextStyles.s12Bold.copyWith(color: ColorPalette.primaryGreen),
-                    ),
+                    Text(message, style: AppTextStyles.s12Bold.copyWith(color: ColorPalette.primaryGreen)),
                   ],
                 ),
               ),

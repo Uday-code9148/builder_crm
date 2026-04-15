@@ -1,9 +1,6 @@
 class ValidationUtils {
   static bool isValidPhoneNumber(String phone) {
-    final regex = RegExp(
-      r'^(\+?1[-\s.]?)?\(?\d{3}\)?[-\s.]?\d{3}[-\s.]?\d{4}$|^(\+?91[-\s.]?)?\d{10}$',
-      caseSensitive: false,
-    );
+    final regex = RegExp(r'^(\+?1[-\s.]?)?\(?\d{3}\)?[-\s.]?\d{3}[-\s.]?\d{4}$|^(\+?91[-\s.]?)?\d{10}$', caseSensitive: false);
     return regex.hasMatch(phone) && phone.length >= 10 && phone.length <= 15;
   }
 

@@ -71,10 +71,7 @@ class _ResetPasswordViewState extends BaseState<_ResetPasswordView> {
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Reset Password'),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new),
-                onPressed: () => context.pop(),
-              ),
+              leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new), onPressed: () => context.pop()),
             ),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -86,9 +83,7 @@ class _ResetPasswordViewState extends BaseState<_ResetPasswordView> {
                   const SizedBox(height: 8),
                   Text(
                     'Enter the code sent to ${widget.email} and your new password.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline),
                   ),
                   const SizedBox(height: 32),
                   AppTextFormField(
@@ -122,10 +117,7 @@ class _ResetPasswordViewState extends BaseState<_ResetPasswordView> {
                     },
                   ),
                   const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _submit,
-                    child: const Text('Reset Password'),
-                  ),
+                  ElevatedButton(onPressed: _submit, child: const Text('Reset Password')),
                 ],
               ),
             ),
@@ -136,14 +128,9 @@ class _ResetPasswordViewState extends BaseState<_ResetPasswordView> {
   }
 
   void _submit() {
-    final isValid = [_codeFormKey, _passwordFormKey, _confirmPasswordFormKey]
-        .every((k) => k.currentState?.validate() == true);
+    final isValid = [_codeFormKey, _passwordFormKey, _confirmPasswordFormKey].every((k) => k.currentState?.validate() == true);
     if (isValid) {
-      context.read<ResetPasswordCubit>().resetPassword(
-            email: widget.email,
-            code: _codeController.text.trim(),
-            newPassword: _passwordController.text,
-          );
+      context.read<ResetPasswordCubit>().resetPassword(email: widget.email, code: _codeController.text.trim(), newPassword: _passwordController.text);
     }
   }
 }

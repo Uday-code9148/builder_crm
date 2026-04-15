@@ -39,31 +39,22 @@ class AppForm extends BaseStatelessWidget {
           children: [
             leadingButton,
             const SizedBox(width: 14),
-            Expanded(
-              child: trailingButton,
-            )
+            Expanded(child: trailingButton),
           ],
         ),
       ),
       body: SafeArea(
         child: Container(
-          height:  MediaQuery.of(context).size.height ,
-          width:  MediaQuery.of(context).size.width ,
+          height: MediaQuery.of(context).size.height,
+          width: MediaQuery.of(context).size.width,
           padding: padding ?? const EdgeInsets.only(left: 24, right: 14),
           decoration: BoxDecoration(
             color: backgroundColor ?? ColorPalette.white,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
+            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
           ),
           child: Form(
             key: formKey,
-            child: wrapWithScrollView
-                ? SingleChildScrollView(
-                    child: child,
-                  )
-                : child,
+            child: wrapWithScrollView ? SingleChildScrollView(child: child) : child,
           ),
         ),
       ),
@@ -72,7 +63,9 @@ class AppForm extends BaseStatelessWidget {
     final Widget formContent = forceDarkTheme ? Theme(data: AppTheme.darkTheme, child: content) : content;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Theme.of(context).appBarTheme.systemOverlayStyle ?? (Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark),
+      value:
+          Theme.of(context).appBarTheme.systemOverlayStyle ??
+          (Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark),
       child: formContent,
     );
   }
