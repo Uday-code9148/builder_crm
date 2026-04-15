@@ -20,6 +20,7 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
   SupportBloc(this._getTickets) : super(const SupportState()) {
     on<SupportLoadRequested>(_onLoad);
     on<SupportFilterChanged>(_onFilterChanged);
+    on<SupportTicketAdded>(_onTicketAdded);
   }
 
   FutureOr<void> _onLoad(SupportLoadRequested event, Emitter<SupportState> emit) async {
@@ -33,5 +34,9 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
 
   FutureOr<void> _onFilterChanged(SupportFilterChanged event, Emitter<SupportState> emit) {
     emit(state.copyWith(activeFilter: event.filter, clearFilter: event.filter == null));
+  }
+
+  FutureOr<void> _onTicketAdded(SupportTicketAdded event, Emitter<SupportState> emit) {
+    emit(state.copyWith(tickets: [event.ticket, ...state.tickets]));
   }
 }

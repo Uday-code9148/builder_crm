@@ -14,6 +14,8 @@ import 'package:temp_architecture_app_setup/core/resources/image_resources/image
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/blocs/support_bloc/support_bloc.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/blocs/create_ticket_bloc/create_ticket_bloc.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/pages/new_ticket_page.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/widgets/support_loading_skeleton.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
@@ -127,20 +129,31 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
 
   Widget _buildNewTicketButton() {
     final colors = context.colors;
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [colors.primaryTeal, colors.primaryTealContainer]),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(color: colors.primaryTeal.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(ImageResources.icAddTicket, width: 18, height: 18, colorFilter: ColorFilter.mode(colors.onPrimaryTeal, BlendMode.srcIn)),
-          const SizedBox(width: 8),
-          Text('New Ticket', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onPrimaryTeal)),
-        ],
+    return GestureDetector(
+      onTap: () async {
+        final created = await Navigator.of(context).push<SupportTicketEntity>(
+          MaterialPageRoute(
+            builder: (_) => BlocProvider(create: (_) => CreateTicketBloc(), child: const NewTicketPage()),
+          ),
+        );
+        if (!mounted) return;
+        if (created != null) context.read<SupportBloc>().add(SupportTicketAdded(created));
+      },
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [colors.primaryTeal, colors.primaryTealContainer]),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [BoxShadow(color: colors.primaryTeal.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(ImageResources.icAddTicket, width: 18, height: 18, colorFilter: ColorFilter.mode(colors.onPrimaryTeal, BlendMode.srcIn)),
+            const SizedBox(width: 8),
+            Text('New Ticket', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onPrimaryTeal)),
+          ],
+        ),
       ),
     );
   }
