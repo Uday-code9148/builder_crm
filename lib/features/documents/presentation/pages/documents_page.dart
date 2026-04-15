@@ -1,42 +1,18 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
+import 'package:temp_architecture_app_setup/core/common/pages/document_details_page.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/features/documents/domain/entity/document.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/blocs/documents_bloc/documents_bloc.dart';
-
-// ── Status/accent helpers ─────────────────────────────────────────────────
-
-extension _DocStatusUI on DocStatus {
-  String? get label {
-    switch (this) {
-      case DocStatus.verified:
-        return 'Verified';
-      case DocStatus.pending:
-        return 'Pending';
-      case DocStatus.none:
-        return null;
-    }
-  }
-
-  Color? get color {
-    switch (this) {
-      case DocStatus.verified:
-        return ColorPalette.primaryTealFixed;
-      case DocStatus.pending:
-        return ColorPalette.warningAmber;
-      case DocStatus.none:
-        return null;
-    }
-  }
-}
 
 Color _accentColor(String token) {
   switch (token) {
@@ -52,14 +28,16 @@ Color _accentColor(String token) {
 // ── Page ─────────────────────────────────────────────────────────────────
 
 class DocumentsPage extends BaseStatefulWidget {
-  const DocumentsPage({super.key});
+  final String headerTitle;
+  final String? headerSubtitle;
+
+  const DocumentsPage({super.key, this.headerTitle = AppDisplayConstants.appTitle, this.headerSubtitle});
 
   @override
   State<DocumentsPage> createState() => _DocumentsPageState();
 }
 
-class _DocumentsPageState extends BaseState<DocumentsPage>
-    with AutomaticKeepAliveClientMixin {
+class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -74,8 +52,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
   @override
   Widget buildContent(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          getIt<DocumentsBloc>()..add(const DocumentsLoadRequested()),
+      create: (_) => getIt<DocumentsBloc>()..add(const DocumentsLoadRequested()),
       child: BlocBuilder<DocumentsBloc, DocumentsState>(
         builder: (context, state) {
           return Scaffold(
@@ -90,73 +67,18 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
   }
 
   AppBar _buildAppBar() {
-    final colors = context.colors;
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      toolbarHeight: 64,
-      automaticallyImplyLeading: false,
-      titleSpacing: 0,
-      flexibleSpace: ClipRRect(
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors.surface.withValues(alpha: 0.92),
-              border: Border(
-                  bottom: BorderSide(
-                      color: colors.outlineVariant.withValues(alpha: 0.3),
-                      width: 1)),
-            ),
-          ),
-        ),
-      ),
-      title: Row(
-        children: [
-          const SizedBox(width: 20),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: colors.primaryTealFixed,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: colors.onPrimaryTeal.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4))
-              ],
-            ),
-            child: Icon(Icons.home_work_rounded,
-                size: 18, color: colors.white),
-          ),
-          const SizedBox(width: 10),
-          Text('Architectural Curator',
-              style: AppTextStyles.s13SemiBold
-                  .copyWith(color: colors.onSurface)),
-          const Spacer(),
-          Icon(Icons.swap_horiz_rounded,
-              color: colors.onSurfaceVariant, size: 20),
-          const SizedBox(width: 20),
-        ],
-      ),
-    );
+    return buildCuratorGlassAppBar(context: context, title: widget.headerTitle, subtitle: widget.headerSubtitle);
   }
 
   Widget _buildBody(DocumentsState state) {
     final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return Center(
-          child: CircularProgressIndicator(
-              color: colors.primaryTeal, strokeWidth: 2));
+      return Center(child: CircularProgressIndicator(color: colors.primaryTeal, strokeWidth: 2));
     }
     if (state.status == DataStatus.error) {
       return Center(
-          child: Text(state.error ?? 'Something went wrong',
-              style: AppTextStyles.s13Regular
-                  .copyWith(color: colors.onSurfaceVariant)));
+        child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
+      );
     }
     if (state.data == null) return const SizedBox.shrink();
 
@@ -173,17 +95,9 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
               const SizedBox(height: 16),
               _buildTabs(),
               const SizedBox(height: 24),
-              _buildSection(
-                title: 'Legal Documents',
-                accentColor: ColorPalette.secondaryPurple,
-                items: data.legalDocs,
-              ),
+              _buildSection(title: 'Legal Documents', accentColor: ColorPalette.secondaryPurple, items: data.legalDocs),
               const SizedBox(height: 20),
-              _buildSection(
-                title: 'Payment & Finance',
-                accentColor: colors.primaryTeal,
-                items: data.paymentDocs,
-              ),
+              _buildSection(title: 'Payment & Finance', accentColor: colors.primaryTeal, items: data.paymentDocs),
               const SizedBox(height: 20),
               _buildCertSection(data.certificates),
             ]),
@@ -205,16 +119,10 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
       child: Row(
         children: [
           const SizedBox(width: 14),
-          SvgPicture.asset(ImageResources.icSearch,
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(
-                  colors.onSurfaceDim, BlendMode.srcIn)),
+          SvgPicture.asset(ImageResources.icSearch, width: 18, height: 18, colorFilter: ColorFilter.mode(colors.onSurfaceDim, BlendMode.srcIn)),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('Search architectural plans, contract…',
-                style: AppTextStyles.s13Regular
-                    .copyWith(color: colors.onSurfaceDim)),
+            child: Text('Search architectural plans, contract…', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceDim)),
           ),
         ],
       ),
@@ -241,17 +149,11 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? colors.primaryTealContainer.withValues(alpha: 0.25)
-                      : Colors.transparent,
+                  color: selected ? colors.primaryTealContainer.withValues(alpha: 0.25) : ColorPalette.transparent,
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Center(
-                  child: Text(tabs[i],
-                      style: AppTextStyles.s12Medium.copyWith(
-                          color: selected
-                              ? colors.primaryTeal
-                              : colors.onSurfaceVariant)),
+                  child: Text(tabs[i], style: AppTextStyles.s12Medium.copyWith(color: selected ? colors.primaryTeal : colors.onSurfaceVariant)),
                 ),
               ),
             ),
@@ -261,11 +163,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required Color accentColor,
-    required List<DocumentItem> items,
-  }) {
+  Widget _buildSection({required String title, required Color accentColor, required List<DocumentItem> items}) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,14 +173,10 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
             Container(
               width: 6,
               height: 22,
-              decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(99)),
+              decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(99)),
             ),
             const SizedBox(width: 10),
-            Text(title,
-                style: AppTextStyles.s14SemiBold
-                    .copyWith(color: colors.onSurface)),
+            Text(title, style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
           ],
         ),
         const SizedBox(height: 12),
@@ -290,20 +184,14 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
           decoration: BoxDecoration(
             color: colors.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: colors.outlineVariant.withValues(alpha: 0.15),
-                width: 1),
+            border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
           ),
           child: Column(
             children: List.generate(items.length, (i) {
               return Column(
                 children: [
-                  _DocRowTile(item: items[i]),
-                  if (i < items.length - 1)
-                    Divider(
-                        height: 1,
-                        indent: 56,
-                        color: colors.outlineVariant.withValues(alpha: 0.2)),
+                  _DocRowTile(item: items[i], onTap: () => _openDocumentDetails(items[i])),
+                  if (i < items.length - 1) Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.2)),
                 ],
               );
             }),
@@ -323,25 +211,48 @@ class _DocumentsPageState extends BaseState<DocumentsPage>
             Container(
               width: 6,
               height: 22,
-              decoration: BoxDecoration(
-                  color: colors.tertiaryTeal,
-                  borderRadius: BorderRadius.circular(99)),
+              decoration: BoxDecoration(color: colors.tertiaryTeal, borderRadius: BorderRadius.circular(99)),
             ),
             const SizedBox(width: 10),
-            Text('Certificates & Compliance',
-                style: AppTextStyles.s14SemiBold
-                    .copyWith(color: colors.onSurface)),
+            Text('Certificates & Compliance', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
           ],
         ),
-        ...certs.map((c) => _CertCard(doc: c)),
+        ...certs.map((c) => _CertCard(doc: c, onTap: () => _openCertificateDetails(c))),
       ],
+    );
+  }
+
+  void _openDocumentDetails(DocumentItem doc) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DocumentDetailsPage(
+          title: doc.title,
+          subtitle: doc.subtitle,
+          categoryLabel: doc.category.label,
+          statusLabel: doc.status.label,
+          fileUrl: doc.fileUrl ?? '',
+        ),
+      ),
+    );
+  }
+
+  void _openCertificateDetails(CertDocument cert) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            DocumentDetailsPage(title: cert.title, subtitle: cert.subtitle, categoryLabel: 'Certificate & Compliance', fileUrl: cert.fileUrl ?? ''),
+      ),
     );
   }
 }
 
 class _DocRowTile extends StatelessWidget {
   final DocumentItem item;
-  const _DocRowTile({required this.item});
+  final VoidCallback onTap;
+
+  const _DocRowTile({required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -349,70 +260,64 @@ class _DocRowTile extends StatelessWidget {
     final statusLabel = item.status.label;
     final statusColor = item.status.color;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-                color: colors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8)),
-            child: Center(
-              child: SvgPicture.asset(item.iconAsset,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(8)),
+              child: Center(
+                child: SvgPicture.asset(
+                  item.iconAsset,
                   width: 18,
                   height: 18,
-                  colorFilter: const ColorFilter.mode(
-                      ColorPalette.primaryTealFixedDim, BlendMode.srcIn)),
+                  colorFilter: const ColorFilter.mode(ColorPalette.primaryTealFixedDim, BlendMode.srcIn),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.title,
-                    style: AppTextStyles.s13Medium
-                        .copyWith(color: colors.onSurface)),
-                if (item.subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(item.subtitle,
-                      style: AppTextStyles.s11Regular
-                          .copyWith(color: colors.onSurfaceDim)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.title, style: AppTextStyles.s13Medium.copyWith(color: colors.onSurface)),
+                  if (item.subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(item.subtitle, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          if (statusLabel != null) ...[
-            const SizedBox(width: 8),
+            if (statusLabel != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: statusColor!.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
+                child: Text(statusLabel, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
+              ),
+              const SizedBox(width: 8),
+            ],
+            const SizedBox(width: 4),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                  color: statusColor!.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(99)),
-              child: Text(statusLabel,
-                  style:
-                      AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
-            ),
-            const SizedBox(width: 8),
-          ],
-          const SizedBox(width: 4),
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-                color: colors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8)),
-            child: Center(
-              child: SvgPicture.asset(ImageResources.icDownload,
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(8)),
+              child: Center(
+                child: SvgPicture.asset(
+                  ImageResources.icDownload,
                   width: 16,
                   height: 16,
-                  colorFilter: ColorFilter.mode(
-                      colors.primaryTeal, BlendMode.srcIn)),
+                  colorFilter: ColorFilter.mode(colors.primaryTeal, BlendMode.srcIn),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -420,7 +325,9 @@ class _DocRowTile extends StatelessWidget {
 
 class _CertCard extends StatelessWidget {
   final CertDocument doc;
-  const _CertCard({required this.doc});
+  final VoidCallback onTap;
+
+  const _CertCard({required this.doc, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -431,9 +338,7 @@ class _CertCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: colors.outlineVariant.withValues(alpha: 0.15),
-            width: 1),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -447,8 +352,7 @@ class _CertCard extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.07),
-                  borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(56)),
+                  borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(56)),
                 ),
               ),
             ),
@@ -457,30 +361,25 @@ class _CertCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SvgPicture.asset(doc.iconAsset,
-                      width: 26,
-                      height: 26,
-                      colorFilter:
-                          ColorFilter.mode(accent, BlendMode.srcIn)),
+                  SvgPicture.asset(doc.iconAsset, width: 26, height: 26, colorFilter: ColorFilter.mode(accent, BlendMode.srcIn)),
                   const SizedBox(height: 12),
-                  Text(doc.title,
-                      style: AppTextStyles.s14SemiBold
-                          .copyWith(color: colors.onSurface)),
+                  Text(doc.title, style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
                   const SizedBox(height: 3),
-                  Text(doc.subtitle,
-                      style: AppTextStyles.s12Regular
-                          .copyWith(color: colors.onSurfaceVariant)),
+                  Text(doc.subtitle, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
                   const SizedBox(height: 14),
-                  Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: colors.outlineVariant),
-                    ),
-                    child: Center(
-                      child: Text('View Certificate',
-                          style: AppTextStyles.s13Medium.copyWith(color: accent)),
+                  GestureDetector(
+                    onTap: onTap,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colors.outlineVariant),
+                      ),
+                      child: Center(
+                        child: Text('View Certificate', style: AppTextStyles.s13Medium.copyWith(color: accent)),
+                      ),
                     ),
                   ),
                 ],
@@ -503,24 +402,17 @@ class _GradientFab extends StatelessWidget {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colors.primaryTeal, colors.primaryTealContainer],
-          transform: const GradientRotation(2.356),
-        ),
+        gradient: LinearGradient(colors: [colors.primaryTeal, colors.primaryTealContainer], transform: const GradientRotation(2.356)),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: colors.primaryTeal.withValues(alpha: 0.25),
-              blurRadius: 24,
-              offset: const Offset(0, 8))
-        ],
+        boxShadow: [BoxShadow(color: colors.primaryTeal.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))],
       ),
       child: Center(
-        child: SvgPicture.asset(ImageResources.icNewDocUploaded,
-            width: 26,
-            height: 26,
-            colorFilter: ColorFilter.mode(
-                colors.onPrimaryTeal, BlendMode.srcIn)),
+        child: SvgPicture.asset(
+          ImageResources.icNewDocUploaded,
+          width: 26,
+          height: 26,
+          colorFilter: ColorFilter.mode(colors.onPrimaryTeal, BlendMode.srcIn),
+        ),
       ),
     );
   }

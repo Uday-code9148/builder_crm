@@ -1,4 +1,6 @@
 import 'package:injectable/injectable.dart';
+import 'package:temp_architecture_app_setup/core/enums/ticket_category.dart';
+import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/features/support/data/datasources/support_datasource.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket.dart';
 

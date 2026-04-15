@@ -43,14 +43,13 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     Color? onWarningContainer,
     Color? successContainer,
     Color? onSuccessContainer,
-  }) =>
-      AppColorTokens(
-        onSurfaceDim: onSurfaceDim ?? this.onSurfaceDim,
-        warningContainer: warningContainer ?? this.warningContainer,
-        onWarningContainer: onWarningContainer ?? this.onWarningContainer,
-        successContainer: successContainer ?? this.successContainer,
-        onSuccessContainer: onSuccessContainer ?? this.onSuccessContainer,
-      );
+  }) => AppColorTokens(
+    onSurfaceDim: onSurfaceDim ?? this.onSurfaceDim,
+    warningContainer: warningContainer ?? this.warningContainer,
+    onWarningContainer: onWarningContainer ?? this.onWarningContainer,
+    successContainer: successContainer ?? this.successContainer,
+    onSuccessContainer: onSuccessContainer ?? this.onSuccessContainer,
+  );
 
   @override
   AppColorTokens lerp(AppColorTokens? other, double t) {

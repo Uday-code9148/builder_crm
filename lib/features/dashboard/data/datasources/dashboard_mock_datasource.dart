@@ -11,27 +11,10 @@ class DashboardMockDataSource implements DashboardDataSource {
     return const DashboardData(
       userName: 'Rajesh',
       greeting: 'Good Morning, Rajesh',
-      alert: AlertInfo(
-        title: 'Action Required: Pending Payment',
-        subtitle: 'Overdue amount of ₹15,00,000',
-      ),
-      paymentSnapshot: PaymentSnapshot(
-        totalPaid: '₹84,50,000',
-        nextDue: '₹42,20,000',
-        balance: '₹42,30,000',
-        progressPercent: 0.65,
-      ),
-      construction: ConstructionProgress(
-        progressPercent: 0.49,
-        phase: 'Phase 2 – MEP Works',
-        projectName: 'The Emerald Pavilion',
-        unit: 'Unit 402',
-      ),
-      unitInfo: UnitInfo(
-        configuration: '3 BHK Luxury',
-        coverArea: '1,840 sq.ft.',
-        floorWing: '22W / A Wing',
-      ),
+      alert: AlertInfo(title: 'Action Required: Pending Payment', subtitle: 'Overdue amount of ₹15,00,000'),
+      paymentSnapshot: PaymentSnapshot(totalPaid: '₹84,50,000', nextDue: '₹42,20,000', balance: '₹42,30,000', progressPercent: 0.65),
+      construction: ConstructionProgress(progressPercent: 0.49, phase: 'Phase 2 – MEP Works', projectName: 'The Emerald Pavilion', unit: 'Unit 402'),
+      unitInfo: UnitInfo(configuration: '3 BHK Luxury', coverArea: '1,840 sq.ft.', floorWing: '22W / A Wing'),
       recentActivities: [
         ActivityItem(
           iconAsset: ImageResources.icMaintainanceConfirmed,

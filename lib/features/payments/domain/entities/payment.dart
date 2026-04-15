@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
-
-enum PaymentStatus { paid, pending, overdue, upcoming }
+import 'package:temp_architecture_app_setup/core/enums/payment_status.dart';
 
 class PaymentBreakdown extends Equatable {
   final String label;
@@ -36,17 +35,7 @@ class PaymentItem extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        id,
-        stage,
-        subtitle,
-        status,
-        amount,
-        amountLabel,
-        dateLabel,
-        actionLabel,
-        breakdown,
-      ];
+  List<Object?> get props => [id, stage, subtitle, status, amount, amountLabel, dateLabel, actionLabel, breakdown];
 }
 
 class PaymentSummary extends Equatable {
@@ -54,11 +43,7 @@ class PaymentSummary extends Equatable {
   final String paid;
   final String nextDue;
 
-  const PaymentSummary({
-    required this.totalOutstanding,
-    required this.paid,
-    required this.nextDue,
-  });
+  const PaymentSummary({required this.totalOutstanding, required this.paid, required this.nextDue});
 
   @override
   List<Object?> get props => [totalOutstanding, paid, nextDue];

@@ -10,6 +10,5 @@ class GetDashboardDataUseCase extends UseCase<DashboardData, NoParams> {
   GetDashboardDataUseCase(this._repository);
 
   @override
-  FutureEitherFailure<DashboardData> call(NoParams params) =>
-      _repository.getDashboardData();
+  FutureEitherFailure<DashboardData> call(NoParams params) => _repository.getDashboardData();
 }

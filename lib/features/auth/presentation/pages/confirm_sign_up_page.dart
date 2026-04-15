@@ -401,7 +401,7 @@ class _NumKeyState extends State<_NumKey> {
           height: 56,
           margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
-            color: _pressed ? ColorPalette.surfaceContainerHigh : Colors.transparent,
+            color: _pressed ? ColorPalette.surfaceContainerHigh : ColorPalette.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(child: widget.child),

@@ -1,7 +1,5 @@
 part of 'support_bloc.dart';
 
-enum DataStatus { initial, loading, loaded, error }
-
 @immutable
 class SupportState extends Equatable {
   final DataStatus status;
@@ -9,20 +7,9 @@ class SupportState extends Equatable {
   final TicketStatus? activeFilter;
   final String? error;
 
-  const SupportState({
-    this.status = DataStatus.initial,
-    this.tickets = const [],
-    this.activeFilter,
-    this.error,
-  });
+  const SupportState({this.status = DataStatus.initial, this.tickets = const [], this.activeFilter, this.error});
 
-  SupportState copyWith({
-    DataStatus? status,
-    List<SupportTicket>? tickets,
-    TicketStatus? activeFilter,
-    bool clearFilter = false,
-    String? error,
-  }) {
+  SupportState copyWith({DataStatus? status, List<SupportTicket>? tickets, TicketStatus? activeFilter, bool clearFilter = false, String? error}) {
     return SupportState(
       status: status ?? this.status,
       tickets: tickets ?? this.tickets,

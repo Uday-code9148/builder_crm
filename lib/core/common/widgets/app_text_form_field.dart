@@ -96,7 +96,8 @@ class AppTextFormField extends BaseStatelessWidget {
               children: [
                 Row(
                   children: [
-                    if (labelText != null) Text(labelText ?? '', style: AppTextStyles.s12SemiBold.copyWith(color: labelTextColor ?? ColorPalette.primaryDarkColor)),
+                    if (labelText != null)
+                      Text(labelText ?? '', style: AppTextStyles.s12SemiBold.copyWith(color: labelTextColor ?? ColorPalette.primaryDarkColor)),
                     if (isRequired) Text(' *', style: AppTextStyles.s12Medium.copyWith(color: const Color(0xFFEA4335))),
                     if (labelText != null) const Spacer(),
                     ?customTrailingWidget,

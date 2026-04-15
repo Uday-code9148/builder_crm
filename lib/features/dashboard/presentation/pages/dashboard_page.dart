@@ -4,17 +4,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/presentation/helpers/dashboard_navigation_mapper.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/presentation/widgets/more_menu_widget.dart';
 
 class DashboardPage extends BaseStatefulWidget {
-  const DashboardPage({super.key});
+  final ValueChanged<int>? onNavigateToTab;
+  final String headerTitle;
+  final String headerSubtitle;
+
+  const DashboardPage({
+    super.key,
+    this.onNavigateToTab,
+    this.headerTitle = AppDisplayConstants.appTitle,
+    this.headerSubtitle = AppDisplayConstants.unitLabel,
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -92,8 +104,8 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     return SliverAppBar(
       pinned: true,
       toolbarHeight: 64,
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
+      backgroundColor: ColorPalette.transparent,
+      surfaceTintColor: ColorPalette.transparent,
       elevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: ClipRRect(
@@ -117,8 +129,8 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Architectural Curator', style: AppTextStyles.s13SemiBold.copyWith(color: colors.onSurface)),
-                        Text('UNIT 402 · SKY-VILLA', style: AppTextStyles.s9Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1.2)),
+                        Text(widget.headerTitle, style: AppTextStyles.s13SemiBold.copyWith(color: colors.onSurface)),
+                        Text(widget.headerSubtitle, style: AppTextStyles.s9Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1.2)),
                       ],
                     ),
                     const Spacer(),
@@ -285,25 +297,31 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
       (ImageResources.icSupport, 'Support'),
       (ImageResources.icStatement, 'Statement'),
     ];
+
     return Row(
       children: List.generate(actions.length, (i) {
         final a = actions[i];
+        final targetTab = DashboardNavigationMapper.tabIndexForQuickAction(a.$2);
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: i == actions.length - 1 ? 0 : 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: colors.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15)),
-              ),
-              child: Column(
-                children: [
-                  SvgPicture.asset(a.$1, width: 20, height: 20),
-                  const SizedBox(height: 8),
-                  Text(a.$2, style: AppTextStyles.s10Medium.copyWith(color: colors.onSurfaceVariant)),
-                ],
+            child: GestureDetector(
+              onTap: targetTab == null ? null : () => widget.onNavigateToTab?.call(targetTab),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15)),
+                ),
+                child: Column(
+                  children: [
+                    SvgPicture.asset(a.$1, width: 20, height: 20),
+                    const SizedBox(height: 8),
+                    Text(a.$2, style: AppTextStyles.s10Medium.copyWith(color: colors.onSurfaceVariant)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -355,9 +373,9 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
+                      color: colors.onPrimaryTeal.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      border: Border.all(color: colors.white.withValues(alpha: 0.12)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

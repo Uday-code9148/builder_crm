@@ -1,10 +1,12 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
+import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
+import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
@@ -12,92 +14,24 @@ import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/blocs/support_bloc/support_bloc.dart';
 
-// ── Enum → UI helpers ────────────────────────────────────────────────────
-
-extension _TicketCategoryUI on TicketCategory {
-  String get label {
-    switch (this) {
-      case TicketCategory.maintenance:
-        return 'MAINTENANCE';
-      case TicketCategory.legal:
-        return 'LEGAL';
-      case TicketCategory.billing:
-        return 'BILLING';
-      case TicketCategory.security:
-        return 'SECURITY';
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case TicketCategory.maintenance:
-        return ColorPalette.pendingTeal;
-      case TicketCategory.legal:
-        return ColorPalette.secondaryPurple;
-      case TicketCategory.billing:
-        return ColorPalette.paidGreen;
-      case TicketCategory.security:
-        return ColorPalette.overdueRed;
-    }
-  }
-}
-
-extension _TicketStatusUI on TicketStatus {
-  String get label {
-    switch (this) {
-      case TicketStatus.open:
-        return 'Open';
-      case TicketStatus.inProgress:
-        return 'In Progress';
-      case TicketStatus.resolved:
-        return 'Resolved';
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case TicketStatus.open:
-        return ColorPalette.primaryTealFixed;
-      case TicketStatus.inProgress:
-        return ColorPalette.warningAmber;
-      case TicketStatus.resolved:
-        return ColorPalette.paidGreen;
-    }
-  }
-
-  IconData get timeIcon {
-    switch (this) {
-      case TicketStatus.open:
-        return Icons.calendar_today_rounded;
-      case TicketStatus.inProgress:
-        return Icons.schedule_rounded;
-      case TicketStatus.resolved:
-        return Icons.check_circle_outline_rounded;
-    }
-  }
-}
-
 // ── Page ─────────────────────────────────────────────────────────────────
 
 class SupportPage extends BaseStatefulWidget {
-  const SupportPage({super.key});
+  final String headerTitle;
+  final String? headerSubtitle;
+
+  const SupportPage({super.key, this.headerTitle = AppDisplayConstants.appTitle, this.headerSubtitle});
 
   @override
   State<SupportPage> createState() => _SupportPageState();
 }
 
-class _SupportPageState extends BaseState<SupportPage>
-    with AutomaticKeepAliveClientMixin {
+class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
   static const _filterLabels = ['All', 'Open', 'In Progress', 'Resolved'];
-  static const _filterValues = [
-    null,
-    TicketStatus.open,
-    TicketStatus.inProgress,
-    TicketStatus.resolved,
-  ];
+  static const _filterValues = [null, TicketStatus.open, TicketStatus.inProgress, TicketStatus.resolved];
 
   @override
   Widget build(BuildContext context) {
@@ -111,84 +45,25 @@ class _SupportPageState extends BaseState<SupportPage>
       create: (_) => getIt<SupportBloc>()..add(const SupportLoadRequested()),
       child: BlocBuilder<SupportBloc, SupportState>(
         builder: (context, state) {
-          return Scaffold(
-            backgroundColor: context.colors.surface,
-            appBar: _buildAppBar(),
-            body: _buildBody(context, state),
-          );
+          return Scaffold(backgroundColor: context.colors.surface, appBar: _buildAppBar(), body: _buildBody(context, state));
         },
       ),
     );
   }
 
   AppBar _buildAppBar() {
-    final colors = context.colors;
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      toolbarHeight: 64,
-      automaticallyImplyLeading: false,
-      titleSpacing: 0,
-      flexibleSpace: ClipRRect(
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors.surface.withValues(alpha: 0.92),
-              border: Border(
-                  bottom: BorderSide(
-                      color: colors.outlineVariant.withValues(alpha: 0.3),
-                      width: 1)),
-            ),
-          ),
-        ),
-      ),
-      title: Row(
-        children: [
-          const SizedBox(width: 20),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: colors.primaryTealFixed,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: colors.onPrimaryTeal.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4))
-              ],
-            ),
-            child: Icon(Icons.home_work_rounded,
-                size: 18, color: colors.white),
-          ),
-          const SizedBox(width: 10),
-          Text('Architectural Curator',
-              style: AppTextStyles.s13SemiBold
-                  .copyWith(color: colors.onSurface)),
-          const Spacer(),
-          Icon(Icons.swap_horiz_rounded,
-              color: colors.onSurfaceVariant, size: 20),
-          const SizedBox(width: 20),
-        ],
-      ),
-    );
+    return buildCuratorGlassAppBar(context: context, title: widget.headerTitle, subtitle: widget.headerSubtitle);
   }
 
   Widget _buildBody(BuildContext context, SupportState state) {
     final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return Center(
-          child: CircularProgressIndicator(
-              color: colors.primaryTeal, strokeWidth: 2));
+      return Center(child: CircularProgressIndicator(color: colors.primaryTeal, strokeWidth: 2));
     }
     if (state.status == DataStatus.error) {
       return Center(
-          child: Text(state.error ?? 'Something went wrong',
-              style: AppTextStyles.s13Regular
-                  .copyWith(color: colors.onSurfaceVariant)));
+        child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
+      );
     }
 
     final tickets = state.filteredTickets;
@@ -221,17 +96,15 @@ class _SupportPageState extends BaseState<SupportPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Support Tickets',
-            style: AppTextStyles.s24Bold.copyWith(
-                fontSize: 30,
-                fontWeight: FontWeight.w900,
-                color: colors.onSurface,
-                letterSpacing: -0.5)),
+        Text(
+          'Support Tickets',
+          style: AppTextStyles.s24Bold.copyWith(fontSize: 30, fontWeight: FontWeight.w900, color: colors.onSurface, letterSpacing: -0.5),
+        ),
         const SizedBox(height: 6),
         Text(
-            'Manage architectural inquiries and property maintenance requests.',
-            style: AppTextStyles.s13Regular.copyWith(
-                color: colors.onSurfaceVariant, height: 1.4)),
+          'Manage architectural inquiries and property maintenance requests.',
+          style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant, height: 1.4),
+        ),
       ],
     );
   }
@@ -241,31 +114,16 @@ class _SupportPageState extends BaseState<SupportPage>
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors.primaryTeal, colors.primaryTealContainer],
-        ),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [colors.primaryTeal, colors.primaryTealContainer]),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-              color: colors.primaryTeal.withValues(alpha: 0.25),
-              blurRadius: 24,
-              offset: const Offset(0, 8))
-        ],
+        boxShadow: [BoxShadow(color: colors.primaryTeal.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(ImageResources.icAddTicket,
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(
-                  colors.onPrimaryTeal, BlendMode.srcIn)),
+          SvgPicture.asset(ImageResources.icAddTicket, width: 18, height: 18, colorFilter: ColorFilter.mode(colors.onPrimaryTeal, BlendMode.srcIn)),
           const SizedBox(width: 8),
-          Text('New Ticket',
-              style: AppTextStyles.s14SemiBold
-                  .copyWith(color: colors.onPrimaryTeal)),
+          Text('New Ticket', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onPrimaryTeal)),
         ],
       ),
     );
@@ -282,26 +140,15 @@ class _SupportPageState extends BaseState<SupportPage>
         itemBuilder: (_, i) {
           final selected = _filterValues[i] == activeFilter;
           return GestureDetector(
-            onTap: () => context
-                .read<SupportBloc>()
-                .add(SupportFilterChanged(_filterValues[i])),
+            onTap: () => context.read<SupportBloc>().add(SupportFilterChanged(_filterValues[i])),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                border: Border(
-                    bottom: BorderSide(
-                        color: selected
-                            ? colors.primaryTeal
-                            : Colors.transparent,
-                        width: 2)),
+                border: Border(bottom: BorderSide(color: selected ? colors.primaryTeal : ColorPalette.transparent, width: 2)),
               ),
               child: Center(
-                child: Text(_filterLabels[i],
-                    style: AppTextStyles.s13Medium.copyWith(
-                        color: selected
-                            ? colors.primaryTeal
-                            : colors.onSurfaceDim)),
+                child: Text(_filterLabels[i], style: AppTextStyles.s13Medium.copyWith(color: selected ? colors.primaryTeal : colors.onSurfaceDim)),
               ),
             ),
           );
@@ -318,13 +165,9 @@ class _SupportPageState extends BaseState<SupportPage>
         decoration: BoxDecoration(
           color: colors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(99),
-          border: Border.all(
-              color: colors.outlineVariant.withValues(alpha: 0.4),
-              width: 1),
+          border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.4), width: 1),
         ),
-        child: Text('Load More Tickets',
-            style: AppTextStyles.s13Medium
-                .copyWith(color: colors.primaryTeal)),
+        child: Text('Load More Tickets', style: AppTextStyles.s13Medium.copyWith(color: colors.primaryTeal)),
       ),
     );
   }
@@ -332,6 +175,7 @@ class _SupportPageState extends BaseState<SupportPage>
 
 class _TicketCard extends StatelessWidget {
   final SupportTicket ticket;
+
   const _TicketCard({required this.ticket});
 
   @override
@@ -339,17 +183,14 @@ class _TicketCard extends StatelessWidget {
     final colors = context.colors;
     final statusColor = ticket.status.color;
     final categoryColor = ticket.category.color;
-    final timeLabelColor =
-        ticket.isUrgent ? ColorPalette.overdueRed : colors.onSurfaceDim;
+    final timeLabelColor = ticket.isUrgent ? ColorPalette.overdueRed : colors.onSurfaceDim;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: colors.outlineVariant.withValues(alpha: 0.15),
-            width: 1),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -358,8 +199,7 @@ class _TicketCard extends StatelessWidget {
               width: 6,
               decoration: BoxDecoration(
                 color: statusColor,
-                borderRadius:
-                    const BorderRadius.horizontal(left: Radius.circular(12)),
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
               ),
             ),
             Expanded(
@@ -371,93 +211,68 @@ class _TicketCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                              color: colors.primaryTeal.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6)),
-                          child: Text(ticket.id,
-                              style: AppTextStyles.s11Regular.copyWith(
-                                  color: colors.primaryTeal,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3)),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: colors.primaryTeal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                          child: Text(
+                            ticket.id,
+                            style: AppTextStyles.s11Regular.copyWith(color: colors.primaryTeal, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Container(
                           height: 28,
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           decoration: BoxDecoration(
                             color: categoryColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                                color: categoryColor.withValues(alpha: 0.2),
-                                width: 1),
+                            border: Border.all(color: categoryColor.withValues(alpha: 0.2), width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                      color: categoryColor,
-                                      shape: BoxShape.circle)),
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(color: categoryColor, shape: BoxShape.circle),
+                              ),
                               const SizedBox(width: 5),
-                              Text(ticket.category.label,
-                                  style: AppTextStyles.s9SemiBold.copyWith(
-                                      color: categoryColor,
-                                      letterSpacing: 0.5)),
+                              Text(ticket.category.label, style: AppTextStyles.s9SemiBold.copyWith(color: categoryColor, letterSpacing: 0.5)),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(ticket.title,
-                        style: AppTextStyles.s15SemiBold.copyWith(
-                            color: colors.onSurface,
-                            letterSpacing: -0.2)),
+                    Text(ticket.title, style: AppTextStyles.s15SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.2)),
                     const SizedBox(height: 3),
-                    Text(ticket.preview,
-                        style: AppTextStyles.s12Regular
-                            .copyWith(color: colors.onSurfaceVariant)),
+                    Text(ticket.preview, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(99),
-                            border: Border.all(
-                                color: statusColor.withValues(alpha: 0.3),
-                                width: 1),
+                            border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                  width: 5,
-                                  height: 5,
-                                  decoration: BoxDecoration(
-                                      color: statusColor,
-                                      shape: BoxShape.circle)),
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                              ),
                               const SizedBox(width: 5),
-                              Text(ticket.status.label,
-                                  style: AppTextStyles.s10SemiBold
-                                      .copyWith(color: statusColor)),
+                              Text(ticket.status.label, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
                             ],
                           ),
                         ),
                         const Spacer(),
-                        Icon(ticket.status.timeIcon,
-                            size: 11, color: timeLabelColor),
+                        Icon(ticket.status.timeIcon, size: 11, color: timeLabelColor),
                         const SizedBox(width: 4),
-                        Text(ticket.timeLabel,
-                            style: AppTextStyles.s11Regular
-                                .copyWith(color: timeLabelColor)),
+                        Text(ticket.timeLabel, style: AppTextStyles.s11Regular.copyWith(color: timeLabelColor)),
                       ],
                     ),
                   ],

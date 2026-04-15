@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:temp_architecture_app_setup/core/enums/snackbar_type.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-
-enum SnackbarType { success, warning, error }
 
 class AppSnackbar {
   static final List<OverlayEntry> _active = [];
 
-  static void show({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message, SnackbarType type = SnackbarType.success, Duration duration = const Duration(seconds: 2), String? actionLabel, VoidCallback? onAction, bool persistent = false}) {
+  static void show({
+    BuildContext? context,
+    GlobalKey<NavigatorState>? navigatorKey,
+    required String message,
+    SnackbarType type = SnackbarType.success,
+    Duration duration = const Duration(seconds: 2),
+    String? actionLabel,
+    VoidCallback? onAction,
+    bool persistent = false,
+  }) {
     assert(context != null || navigatorKey != null, 'Provide either context or navigatorKey.');
 
     final overlay = context != null ? Overlay.of(context) : navigatorKey!.currentState!.overlay!;
@@ -34,11 +42,14 @@ class AppSnackbar {
     }
   }
 
-  static void showSuccess({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message}) => show(context: context, navigatorKey: navigatorKey, message: message, type: SnackbarType.success);
+  static void showSuccess({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message}) =>
+      show(context: context, navigatorKey: navigatorKey, message: message, type: SnackbarType.success);
 
-  static void showError({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message}) => show(context: context, navigatorKey: navigatorKey, message: message, type: SnackbarType.error);
+  static void showError({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message}) =>
+      show(context: context, navigatorKey: navigatorKey, message: message, type: SnackbarType.error);
 
-  static void showWarning({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message}) => show(context: context, navigatorKey: navigatorKey, message: message, type: SnackbarType.warning);
+  static void showWarning({BuildContext? context, GlobalKey<NavigatorState>? navigatorKey, required String message}) =>
+      show(context: context, navigatorKey: navigatorKey, message: message, type: SnackbarType.warning);
 
   static void _dismissAll() {
     for (final e in _active) {
@@ -97,13 +108,13 @@ class _SnackbarWidgetState extends State<_SnackbarWidget> with SingleTickerProvi
         direction: DismissDirection.horizontal,
         onDismissed: (_) => widget.onDismissed(),
         child: Material(
-          color: Colors.transparent,
+          color: ColorPalette.transparent,
           child: Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: _backgroundColor, borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: widget.type.backgroundColor, borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
-                Icon(_icon, color: ColorPalette.white),
+                Icon(widget.type.icon, color: ColorPalette.white),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(widget.message, style: AppTextStyles.s12Regular.copyWith(color: ColorPalette.white)),
@@ -120,16 +131,4 @@ class _SnackbarWidgetState extends State<_SnackbarWidget> with SingleTickerProvi
       ),
     );
   }
-
-  IconData get _icon => switch (widget.type) {
-    SnackbarType.success => Icons.check_circle_outline,
-    SnackbarType.warning => Icons.warning_amber_outlined,
-    SnackbarType.error => Icons.error_outline,
-  };
-
-  Color get _backgroundColor => switch (widget.type) {
-    SnackbarType.success => ColorPalette.primaryGreen,
-    SnackbarType.warning => ColorPalette.yellow100Accent,
-    SnackbarType.error => ColorPalette.fadedRed,
-  };
 }

@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
 import 'package:temp_architecture_app_setup/features/updates/domain/entities/project_progress.dart';
 import 'package:temp_architecture_app_setup/features/updates/domain/usecases/get_project_progress_usecase.dart';

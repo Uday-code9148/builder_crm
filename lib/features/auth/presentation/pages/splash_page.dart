@@ -47,8 +47,9 @@ class _SplashViewState extends BaseState<_SplashView> with SingleTickerProviderS
   }
 
   @override
-  void onDispose() {
+  void dispose() {
     _controller.dispose();
+    super.dispose();
   }
 
   @override

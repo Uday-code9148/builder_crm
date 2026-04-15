@@ -1,7 +1,5 @@
 part of 'updates_bloc.dart';
 
-enum DataStatus { initial, loading, loaded, error }
-
 @immutable
 class UpdatesState extends Equatable {
   final DataStatus status;

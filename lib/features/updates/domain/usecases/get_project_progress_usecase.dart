@@ -10,6 +10,5 @@ class GetProjectProgressUseCase extends UseCase<ProjectProgress, NoParams> {
   GetProjectProgressUseCase(this._repository);
 
   @override
-  FutureEitherFailure<ProjectProgress> call(NoParams params) =>
-      _repository.getProjectProgress();
+  FutureEitherFailure<ProjectProgress> call(NoParams params) => _repository.getProjectProgress();
 }

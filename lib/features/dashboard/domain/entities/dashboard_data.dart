@@ -16,12 +16,7 @@ class PaymentSnapshot extends Equatable {
   final String balance;
   final double progressPercent; // 0.0 – 1.0
 
-  const PaymentSnapshot({
-    required this.totalPaid,
-    required this.nextDue,
-    required this.balance,
-    required this.progressPercent,
-  });
+  const PaymentSnapshot({required this.totalPaid, required this.nextDue, required this.balance, required this.progressPercent});
 
   @override
   List<Object?> get props => [totalPaid, nextDue, balance, progressPercent];
@@ -33,12 +28,7 @@ class ConstructionProgress extends Equatable {
   final String projectName;
   final String unit;
 
-  const ConstructionProgress({
-    required this.progressPercent,
-    required this.phase,
-    required this.projectName,
-    required this.unit,
-  });
+  const ConstructionProgress({required this.progressPercent, required this.phase, required this.projectName, required this.unit});
 
   @override
   List<Object?> get props => [progressPercent, phase, projectName, unit];
@@ -49,11 +39,7 @@ class UnitInfo extends Equatable {
   final String coverArea;
   final String floorWing;
 
-  const UnitInfo({
-    required this.configuration,
-    required this.coverArea,
-    required this.floorWing,
-  });
+  const UnitInfo({required this.configuration, required this.coverArea, required this.floorWing});
 
   @override
   List<Object?> get props => [configuration, coverArea, floorWing];
@@ -65,12 +51,7 @@ class ActivityItem extends Equatable {
   final String subtitle;
   final String timeLabel;
 
-  const ActivityItem({
-    required this.iconAsset,
-    required this.title,
-    required this.subtitle,
-    required this.timeLabel,
-  });
+  const ActivityItem({required this.iconAsset, required this.title, required this.subtitle, required this.timeLabel});
 
   @override
   List<Object?> get props => [iconAsset, title, subtitle, timeLabel];
@@ -96,13 +77,5 @@ class DashboardData extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        userName,
-        greeting,
-        alert,
-        paymentSnapshot,
-        construction,
-        unitInfo,
-        recentActivities,
-      ];
+  List<Object?> get props => [userName, greeting, alert, paymentSnapshot, construction, unitInfo, recentActivities];
 }

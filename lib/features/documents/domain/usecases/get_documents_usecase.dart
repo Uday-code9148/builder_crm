@@ -10,6 +10,5 @@ class GetDocumentsUseCase extends UseCase<DocumentsData, NoParams> {
   GetDocumentsUseCase(this._repository);
 
   @override
-  FutureEitherFailure<DocumentsData> call(NoParams params) =>
-      _repository.getDocumentsData();
+  FutureEitherFailure<DocumentsData> call(NoParams params) => _repository.getDocumentsData();
 }

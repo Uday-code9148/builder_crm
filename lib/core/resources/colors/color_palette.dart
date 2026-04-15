@@ -6,21 +6,21 @@ class ColorPalette {
   // ═══════════════════════════════════════════════════════════════════════════
 
   // ─── Surface Hierarchy (tonal layering, dark-first) ───────────────────────
-  static const Color surface = Color(0xFF101413);               // Base layer
+  static const Color surface = Color(0xFF101413); // Base layer
   static const Color surfaceContainerLowest = Color(0xFF0D1210); // Recessed
-  static const Color surfaceContainerLow = Color(0xFF181D1B);    // Sectioning
-  static const Color surfaceContainer = Color(0xFF1C211F);       // Cards
-  static const Color surfaceContainerHigh = Color(0xFF262B29);   // Card content
+  static const Color surfaceContainerLow = Color(0xFF181D1B); // Sectioning
+  static const Color surfaceContainer = Color(0xFF1C211F); // Cards
+  static const Color surfaceContainerHigh = Color(0xFF262B29); // Card content
   static const Color surfaceContainerHighest = Color(0xFF313634); // Separators
-  static const Color surfaceBright = Color(0xFF353A38);           // Pop elements
+  static const Color surfaceBright = Color(0xFF353A38); // Pop elements
 
   // ─── Primary Teal ─────────────────────────────────────────────────────────
-  static const Color primaryTeal = Color(0xFF79D7C0);             // On-dark primary
-  static const Color primaryTealFixed = Color(0xFF399B86);        // Core brand teal
-  static const Color primaryTealContainer = Color(0xFF3FA08B);    // Gradient end / container
-  static const Color primaryTealFixedDim = Color(0xFF5BBFAB);     // Icon teal
-  static const Color onPrimaryTeal = Color(0xFF00382E);           // Dark teal (tinted shadows)
-  static const Color onPrimaryTealContainer = Color(0xFFB2DFDB);  // Text on primary container
+  static const Color primaryTeal = Color(0xFF79D7C0); // On-dark primary
+  static const Color primaryTealFixed = Color(0xFF399B86); // Core brand teal
+  static const Color primaryTealContainer = Color(0xFF3FA08B); // Gradient end / container
+  static const Color primaryTealFixedDim = Color(0xFF5BBFAB); // Icon teal
+  static const Color onPrimaryTeal = Color(0xFF00382E); // Dark teal (tinted shadows)
+  static const Color onPrimaryTealContainer = Color(0xFFB2DFDB); // Text on primary container
 
   // ─── Secondary Purple (urgency — "New Launch", "Exclusive") ──────────────
   static const Color secondaryPurple = Color(0xFFC7BFFF);
@@ -43,17 +43,17 @@ class ColorPalette {
   static const Color upcomingGrey = Color(0xFF78909C);
 
   // ─── Tertiary (aqua accent) ───────────────────────────────────────────────
-  static const Color tertiaryTeal = Color(0xFF6DD9C1);            // Paid/success teal
-  static const Color tertiaryTealContainer = Color(0xFF2DA28C);   // Container
+  static const Color tertiaryTeal = Color(0xFF6DD9C1); // Paid/success teal
+  static const Color tertiaryTealContainer = Color(0xFF2DA28C); // Container
 
   // ─── Text on Surface ──────────────────────────────────────────────────────
-  static const Color onSurface = Color(0xFFDFE3E0);              // Primary text
-  static const Color onSurfaceVariant = Color(0xFFBDC9C4);       // Secondary text
-  static const Color onSurfaceDim = Color(0xFF6B8C85);           // Tertiary / hint text
+  static const Color onSurface = Color(0xFFDFE3E0); // Primary text
+  static const Color onSurfaceVariant = Color(0xFFBDC9C4); // Secondary text
+  static const Color onSurfaceDim = Color(0xFF6B8C85); // Tertiary / hint text
 
   // ─── Borders ──────────────────────────────────────────────────────────────
   static const Color outline = Color(0xFF87938F);
-  static const Color outlineVariant = Color(0xFF3E4945);          // Ghost border base
+  static const Color outlineVariant = Color(0xFF3E4945); // Ghost border base
 
   // ═══════════════════════════════════════════════════════════════════════════
   // LEGACY TOKENS (kept for backward compatibility)

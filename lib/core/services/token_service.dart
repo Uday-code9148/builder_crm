@@ -20,9 +20,7 @@ class TokenService {
 
   Future<String?> _fetch({required bool forceRefresh}) async {
     try {
-      final session = await Amplify.Auth.fetchAuthSession(
-        options: FetchAuthSessionOptions(forceRefresh: forceRefresh),
-      ) as CognitoAuthSession;
+      final session = await Amplify.Auth.fetchAuthSession(options: FetchAuthSessionOptions(forceRefresh: forceRefresh)) as CognitoAuthSession;
       return session.userPoolTokensResult.valueOrNull?.accessToken.raw;
     } catch (_) {
       return null;

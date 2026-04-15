@@ -14,8 +14,7 @@ abstract class BaseStatelessWidget extends StatelessWidget {
   }
 
   @protected
-  V getThemeValue<V>(BuildContext context, {required V light, required V dark}) =>
-      Theme.of(context).brightness == Brightness.light ? light : dark;
+  V getThemeValue<V>(BuildContext context, {required V light, required V dark}) => Theme.of(context).brightness == Brightness.light ? light : dark;
 
   // ─── Build ─────────────────────────────────────────────────────────────────
 

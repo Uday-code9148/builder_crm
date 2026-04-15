@@ -10,6 +10,5 @@ class GetSupportTicketsUseCase extends UseCase<List<SupportTicket>, NoParams> {
   GetSupportTicketsUseCase(this._repository);
 
   @override
-  FutureEitherFailure<List<SupportTicket>> call(NoParams params) =>
-      _repository.getTickets();
+  FutureEitherFailure<List<SupportTicket>> call(NoParams params) => _repository.getTickets();
 }

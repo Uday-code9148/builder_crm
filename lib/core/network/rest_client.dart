@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:temp_architecture_app_setup/core/constants/api_constants.dart';
 import 'package:temp_architecture_app_setup/core/network/enums/request_method.dart';
 import 'package:temp_architecture_app_setup/core/network/interceptors/logging_interceptor.dart';
-import 'package:temp_architecture_app_setup/core/constants/api_constants.dart';
 
 /// Thin Dio wrapper. Each instance targets one [baseUrl].
 class RestClient {
@@ -11,14 +11,9 @@ class RestClient {
     dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout:
-            const Duration(milliseconds: ApiConstants.connectTimeout),
-        receiveTimeout:
-            const Duration(milliseconds: ApiConstants.receiveTimeout),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        connectTimeout: const Duration(milliseconds: ApiConstants.connectTimeout),
+        receiveTimeout: const Duration(milliseconds: ApiConstants.receiveTimeout),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       ),
     )..interceptors.add(LoggingInterceptor());
   }
@@ -34,13 +29,5 @@ class RestRequest {
   final Duration? timeout;
   final CancelToken? cancelToken;
 
-  const RestRequest(
-    this.path, {
-    this.body,
-    this.method = RequestMethod.get,
-    this.queryParameters,
-    this.headers,
-    this.timeout,
-    this.cancelToken,
-  });
+  const RestRequest(this.path, {this.body, this.method = RequestMethod.get, this.queryParameters, this.headers, this.timeout, this.cancelToken});
 }

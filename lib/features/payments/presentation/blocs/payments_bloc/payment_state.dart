@@ -1,7 +1,5 @@
 part of 'payment_bloc.dart';
 
-enum DataStatus { initial, loading, loaded, error }
-
 @immutable
 class PaymentState extends Equatable {
   final DataStatus status;
@@ -9,20 +7,9 @@ class PaymentState extends Equatable {
   final PaymentStatus? activeFilter;
   final String? error;
 
-  const PaymentState({
-    this.status = DataStatus.initial,
-    this.data,
-    this.activeFilter,
-    this.error,
-  });
+  const PaymentState({this.status = DataStatus.initial, this.data, this.activeFilter, this.error});
 
-  PaymentState copyWith({
-    DataStatus? status,
-    PaymentsData? data,
-    PaymentStatus? activeFilter,
-    bool clearFilter = false,
-    String? error,
-  }) {
+  PaymentState copyWith({DataStatus? status, PaymentsData? data, PaymentStatus? activeFilter, bool clearFilter = false, String? error}) {
     return PaymentState(
       status: status ?? this.status,
       data: data ?? this.data,

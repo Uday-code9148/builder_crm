@@ -1,4 +1,5 @@
 import 'package:injectable/injectable.dart';
+import 'package:temp_architecture_app_setup/core/enums/payment_status.dart';
 import 'package:temp_architecture_app_setup/features/payments/data/datasources/payments_datasource.dart';
 import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment.dart';
 
@@ -8,11 +9,7 @@ class PaymentsMockDataSource implements PaymentsDataSource {
   Future<PaymentsData> getPaymentsData() async {
     await Future.delayed(const Duration(milliseconds: 400));
     return const PaymentsData(
-      summary: PaymentSummary(
-        totalOutstanding: '₹45,50,000',
-        paid: '₹1,25,00,000',
-        nextDue: '₹15,00,000',
-      ),
+      summary: PaymentSummary(totalOutstanding: '₹45,50,000', paid: '₹1,25,00,000', nextDue: '₹15,00,000'),
       items: [
         PaymentItem(
           id: 'PAY-001',

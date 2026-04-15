@@ -1,8 +1,6 @@
 import 'package:equatable/equatable.dart';
-
-enum TicketCategory { maintenance, legal, billing, security }
-
-enum TicketStatus { open, inProgress, resolved }
+import 'package:temp_architecture_app_setup/core/enums/ticket_category.dart';
+import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 
 class SupportTicket extends Equatable {
   final String id;

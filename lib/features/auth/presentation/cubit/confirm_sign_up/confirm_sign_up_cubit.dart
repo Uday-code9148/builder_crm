@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/app_loading_dialog.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/app_snackbar.dart';
+import 'package:temp_architecture_app_setup/core/enums/snackbar_type.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/models/request_models/confirm_sign_up_model.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/models/request_models/resend_sign_up_code_model.dart';
 import 'package:temp_architecture_app_setup/features/auth/domain/usecases/confirm_sign_up_usecase.dart';
