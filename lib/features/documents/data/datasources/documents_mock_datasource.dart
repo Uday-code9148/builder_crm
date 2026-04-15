@@ -3,16 +3,16 @@ import 'package:temp_architecture_app_setup/core/enums/doc_category.dart';
 import 'package:temp_architecture_app_setup/core/enums/doc_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/features/documents/data/datasources/documents_datasource.dart';
-import 'package:temp_architecture_app_setup/features/documents/domain/entity/document.dart';
+import 'package:temp_architecture_app_setup/features/documents/domain/entity/document_entities.dart';
 
 @LazySingleton(as: DocumentsDataSource)
 class DocumentsMockDataSource implements DocumentsDataSource {
   @override
-  Future<DocumentsData> getDocumentsData() async {
+  Future<DocumentsDataEntity> getDocumentsData() async {
     await Future.delayed(const Duration(milliseconds: 400));
-    return const DocumentsData(
+    return const DocumentsDataEntity(
       legalDocs: [
-        DocumentItem(
+        DocumentItemEntity(
           id: 'DOC-001',
           iconAsset: ImageResources.icPurchaseAgreement,
           title: 'Purchase Agreement_V4.pdf',
@@ -20,7 +20,7 @@ class DocumentsMockDataSource implements DocumentsDataSource {
           category: DocCategory.legal,
           fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         ),
-        DocumentItem(
+        DocumentItemEntity(
           id: 'DOC-002',
           iconAsset: ImageResources.icTitleDeedDraft,
           title: 'Title Deed_Draft.pdf',
@@ -30,7 +30,7 @@ class DocumentsMockDataSource implements DocumentsDataSource {
         ),
       ],
       paymentDocs: [
-        DocumentItem(
+        DocumentItemEntity(
           id: 'DOC-003',
           iconAsset: ImageResources.icInitialDepositReceipt,
           title: 'Initial Deposit Receipt #4920',
@@ -39,7 +39,7 @@ class DocumentsMockDataSource implements DocumentsDataSource {
           status: DocStatus.verified,
           fileUrl: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1200',
         ),
-        DocumentItem(
+        DocumentItemEntity(
           id: 'DOC-004',
           iconAsset: ImageResources.icStructuralEscrow,
           title: 'Structural Escrow Release Schedule',
@@ -50,7 +50,7 @@ class DocumentsMockDataSource implements DocumentsDataSource {
         ),
       ],
       certificates: [
-        CertDocument(
+        CertDocumentEntity(
           id: 'CERT-001',
           iconAsset: ImageResources.icEnvironmentalImpact,
           title: 'Environmental Impact Report',
@@ -58,7 +58,7 @@ class DocumentsMockDataSource implements DocumentsDataSource {
           accentTokenName: 'secondaryPurple',
           fileUrl: 'https://www.orimi.com/pdf-test.pdf',
         ),
-        CertDocument(
+        CertDocumentEntity(
           id: 'CERT-002',
           iconAsset: ImageResources.icEnergyRating,
           title: 'Energy Rating Certificate',
@@ -66,7 +66,7 @@ class DocumentsMockDataSource implements DocumentsDataSource {
           accentTokenName: 'primaryTeal',
           fileUrl: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=1200',
         ),
-        CertDocument(
+        CertDocumentEntity(
           id: 'CERT-003',
           iconAsset: ImageResources.icSafetyInspection,
           title: 'Safety Inspection Log',

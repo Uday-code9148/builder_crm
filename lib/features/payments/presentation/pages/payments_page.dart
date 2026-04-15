@@ -11,9 +11,10 @@ import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dar
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment.dart';
+import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment_entities.dart';
 import 'package:temp_architecture_app_setup/features/payments/presentation/blocs/payments_bloc/payment_bloc.dart';
 import 'package:temp_architecture_app_setup/features/payments/presentation/helpers/payment_breakdown_resolver.dart';
+import 'package:temp_architecture_app_setup/features/payments/presentation/widgets/payments_loading_skeleton.dart';
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
   Widget _buildBody(BuildContext context, PaymentState state) {
     final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return Center(child: CircularProgressIndicator(color: colors.primaryTeal, strokeWidth: 2));
+      return const PaymentsLoadingSkeleton();
     }
     if (state.status == DataStatus.error) {
       return Center(
@@ -72,27 +73,42 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
 
     final data = state.data!;
     final items = state.filteredItems;
+    final summary = data.summary ?? const PaymentSummaryEntity();
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              const SizedBox(height: 20),
-              _buildSummary(data.summary),
-              const SizedBox(height: 20),
-              _buildFilters(context, state.activeFilter),
-              const SizedBox(height: 16),
-              ...items.map((item) => _buildPaymentCard(item)),
-            ]),
+    return RefreshIndicator(
+      color: colors.primaryTeal,
+      notificationPredicate: (n) => n.depth == 0,
+      onRefresh: () async {
+        final bloc = context.read<PaymentBloc>();
+        bloc.add(const PaymentsLoadRequested());
+        try {
+          await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
+        } catch (_) {
+          // End the indicator even if the request fails/timeout.
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 20),
+                _buildSummary(summary),
+                const SizedBox(height: 20),
+                _buildFilters(context, state.activeFilter),
+                const SizedBox(height: 16),
+                ...items.map((item) => _buildPaymentCard(item)),
+              ]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildSummary(PaymentSummary summary) {
+  Widget _buildSummary(PaymentSummaryEntity summary) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -119,7 +135,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
               Text('Total Outstanding', style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
               const SizedBox(height: 6),
               Text(
-                summary.totalOutstanding,
+                summary.totalOutstanding ?? '--',
                 style: AppTextStyles.s24Bold.copyWith(fontSize: 32, fontWeight: FontWeight.w900, color: colors.onSurface, letterSpacing: -0.5),
               ),
               const SizedBox(height: 16),
@@ -131,7 +147,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
                       children: [
                         Text('PAID', style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1)),
                         const SizedBox(height: 2),
-                        Text(summary.paid, style: AppTextStyles.s13SemiBold.copyWith(color: colors.primaryTeal)),
+                        Text(summary.paid ?? '--', style: AppTextStyles.s13SemiBold.copyWith(color: colors.primaryTeal)),
                       ],
                     ),
                   ),
@@ -141,7 +157,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
                       children: [
                         Text('NEXT DUE', style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1)),
                         const SizedBox(height: 2),
-                        Text(summary.nextDue, style: AppTextStyles.s13SemiBold.copyWith(color: colors.warningAmber)),
+                        Text(summary.nextDue ?? '--', style: AppTextStyles.s13SemiBold.copyWith(color: colors.warningAmber)),
                       ],
                     ),
                   ),
@@ -185,12 +201,14 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
     );
   }
 
-  Widget _buildPaymentCard(PaymentItem item) {
+  Widget _buildPaymentCard(PaymentItemEntity item) {
     final colors = context.colors;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final statusColor = item.status.color;
+    final status = item.status ?? PaymentStatus.upcoming;
+    final statusColor = status.color;
     final isExpanded = _expandedId == item.id;
-    final canOpenDetails = item.actionLabel.isNotEmpty || item.breakdown.isNotEmpty;
+    final actionLabel = item.actionLabel ?? '';
+    final canOpenDetails = actionLabel.isNotEmpty || (item.breakdown?.isNotEmpty ?? false);
     final detailRows = PaymentBreakdownResolver.resolve(item);
 
     return Column(
@@ -230,13 +248,13 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
                             Row(
                               children: [
                                 Expanded(
-                                  child: Text(item.stage, style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
+                                  child: Text(item.stage ?? '--', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
                                 ),
-                                _Badge(label: item.status.label, color: statusColor),
+                                _Badge(label: status.label, color: statusColor),
                               ],
                             ),
                             const SizedBox(height: 2),
-                            Text(item.subtitle, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceVariant)),
+                            Text(item.subtitle ?? '--', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceVariant)),
                             const SizedBox(height: 12),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
@@ -245,19 +263,19 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item.amountLabel.toUpperCase(),
+                                      (item.amountLabel ?? '--').toUpperCase(),
                                       style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 0.9),
                                     ),
                                     const SizedBox(height: 2),
-                                    Text(item.amount, style: AppTextStyles.s16SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.3)),
+                                    Text(item.amount ?? '--', style: AppTextStyles.s16SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.3)),
                                   ],
                                 ),
                                 const Spacer(),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text(item.dateLabel.toUpperCase(), style: AppTextStyles.s11SemiBold.copyWith(color: colors.onSurfaceVariant)),
-                                    if (item.actionLabel.isNotEmpty) ...[
+                                    Text((item.dateLabel ?? '--').toUpperCase(), style: AppTextStyles.s11SemiBold.copyWith(color: colors.onSurfaceVariant)),
+                                    if (actionLabel.isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       GestureDetector(
                                         onTap: canOpenDetails
@@ -268,7 +286,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
                                         behavior: HitTestBehavior.opaque,
                                         child: Row(
                                           children: [
-                                            Text(item.actionLabel, style: AppTextStyles.s12Medium.copyWith(color: ColorPalette.primaryTealFixed)),
+                                            Text(actionLabel, style: AppTextStyles.s12Medium.copyWith(color: ColorPalette.primaryTealFixed)),
                                             const SizedBox(width: 2),
                                             Icon(
                                               isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
@@ -297,7 +315,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
           duration: const Duration(milliseconds: 220),
           child: isExpanded
               ? Container(
-                  key: ValueKey('expanded_${item.id}'),
+                  key: ValueKey('expanded_${item.id ?? ''}'),
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
                   decoration: BoxDecoration(
@@ -310,7 +328,7 @@ class _PaymentsPageState extends BaseState<PaymentsPage> with AutomaticKeepAlive
                       ...detailRows.map(
                         (b) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: _ExpandedDetailRow(label: b.label, value: b.value),
+                          child: _ExpandedDetailRow(label: b.label ?? '--', value: b.value ?? '--'),
                         ),
                       ),
                       Container(

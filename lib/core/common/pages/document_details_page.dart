@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
 import 'package:temp_architecture_app_setup/core/enums/document_preview_type.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/skeleton.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
@@ -115,7 +116,7 @@ class _DocumentPreview extends StatelessWidget {
                   width: double.infinity,
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: Skeleton(width: 120, height: 12, borderRadius: BorderRadius.all(Radius.circular(99))));
                   },
                   errorBuilder: (_, error, stackTrace) {
                     developer.log(

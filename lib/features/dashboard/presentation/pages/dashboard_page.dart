@@ -1,20 +1,19 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data_entity.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/presentation/helpers/dashboard_navigation_mapper.dart';
-import 'package:temp_architecture_app_setup/features/dashboard/presentation/widgets/more_menu_widget.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/presentation/widgets/dashboard_loading_skeleton_sliver.dart';
 
 class DashboardPage extends BaseStatefulWidget {
   final ValueChanged<int>? onNavigateToTab;
@@ -38,20 +37,16 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
 
   late final AnimationController _progressCtrl;
   late final Animation<double> _progressAnim;
-  final _scrollCtrl = ScrollController();
-  double _scrollOffset = 0;
 
   @override
   void onInit() {
     _progressCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..forward();
     _progressAnim = CurvedAnimation(parent: _progressCtrl, curve: const Cubic(0.2, 0.8, 0.2, 1));
-    _scrollCtrl.addListener(() => setState(() => _scrollOffset = _scrollCtrl.offset));
   }
 
   @override
   void onDispose() {
     _progressCtrl.dispose();
-    _scrollCtrl.dispose();
   }
 
   @override
@@ -66,31 +61,39 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
       create: (_) => getIt<DashboardBloc>()..add(DashboardLoadRequested()),
       child: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
+          final colors = context.colors;
           return Scaffold(
-            backgroundColor: context.colors.surface,
-            body: CustomScrollView(
-              controller: _scrollCtrl,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                _buildGlassAppBar(_scrollOffset),
-                if (state.status == DataStatus.loading)
-                  SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator(color: context.colors.primaryTeal, strokeWidth: 2)),
-                  )
-                else if (state.status == DataStatus.error)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Text(
-                        state.error ?? 'Something went wrong',
-                        style: AppTextStyles.s13Regular.copyWith(color: context.colors.onSurfaceVariant),
+            backgroundColor: colors.surface,
+            appBar: buildCuratorGlassAppBar(context: context, title: widget.headerTitle, subtitle: widget.headerSubtitle),
+            body: RefreshIndicator(
+              color: colors.primaryTeal,
+              notificationPredicate: (n) => n.depth == 0,
+              onRefresh: () async {
+                final bloc = context.read<DashboardBloc>();
+                bloc.add(DashboardLoadRequested());
+                try {
+                  await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
+                } catch (_) {
+                  // End the indicator even if the request fails/timeout.
+                }
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  if (state.status == DataStatus.loading)
+                    const DashboardLoadingSkeletonSliver()
+                  else if (state.status == DataStatus.error)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
                       ),
-                    ),
-                  )
-                else if (state.data != null)
-                  _buildContent(context, state.data!)
-                else
-                  const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ],
+                    )
+                  else if (state.data != null)
+                    _buildContent(context, state.data!)
+                  else
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                ],
+              ),
             ),
           );
         },
@@ -98,54 +101,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildGlassAppBar(double scrollOffset) {
-    final colors = context.colors;
-    final scrolled = scrollOffset > 8;
-    return SliverAppBar(
-      pinned: true,
-      toolbarHeight: 64,
-      backgroundColor: ColorPalette.transparent,
-      surfaceTintColor: ColorPalette.transparent,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      flexibleSpace: ClipRRect(
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: scrolled ? 16 : 0, sigmaY: scrolled ? 16 : 0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors.surface.withValues(alpha: scrolled ? 0.92 : 1.0),
-              border: scrolled ? Border(bottom: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3))) : null,
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 40, left: 20),
-                child: Row(
-                  children: [
-                    const MoreMenuWidget(),
-                    const SizedBox(width: 10),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(widget.headerTitle, style: AppTextStyles.s13SemiBold.copyWith(color: colors.onSurface)),
-                        Text(widget.headerSubtitle, style: AppTextStyles.s9Regular.copyWith(color: colors.onSurfaceDim, letterSpacing: 1.2)),
-                      ],
-                    ),
-                    const Spacer(),
-                    GestureDetector(onTap: () {}, child: SvgPicture.asset(ImageResources.icSwitchAccount)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContent(BuildContext context, DashboardData data) {
+  Widget _buildContent(BuildContext context, DashboardDataEntity data) {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
       sliver: SliverList(
@@ -154,33 +110,33 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
           _buildGreeting(data),
           const SizedBox(height: 16),
           if (data.alert != null) ...[_buildAlertCard(data.alert!), const SizedBox(height: 16)],
-          _buildPaymentSnapshot(data.paymentSnapshot),
+          _buildPaymentSnapshot(data.paymentSnapshot ?? const PaymentSnapshotEntity()),
           const SizedBox(height: 16),
           _buildQuickActions(),
           const SizedBox(height: 16),
-          _buildConstructionCard(data.construction),
+          _buildConstructionCard(data.construction ?? const ConstructionProgressEntity()),
           const SizedBox(height: 16),
-          _buildUnitSummary(data.unitInfo),
+          _buildUnitSummary(data.unitInfo ?? const UnitInfoEntity()),
           const SizedBox(height: 16),
-          _buildRecentActivity(data.recentActivities),
+          _buildRecentActivity(data.recentActivities ?? const <ActivityItemEntity>[]),
         ]),
       ),
     );
   }
 
-  Widget _buildGreeting(DashboardData data) {
+  Widget _buildGreeting(DashboardDataEntity data) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(data.greeting, style: AppTextStyles.s22SemiBold.copyWith(color: colors.onSurface)),
+        Text(data.greeting ?? '--', style: AppTextStyles.s22SemiBold.copyWith(color: colors.onSurface)),
         const SizedBox(height: 4),
         Text('Welcome back to your portfolio overview.', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
       ],
     );
   }
 
-  Widget _buildAlertCard(AlertInfo alert) {
+  Widget _buildAlertCard(AlertInfoEntity alert) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -202,9 +158,9 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(alert.title, style: AppTextStyles.s12SemiBold.copyWith(color: colors.onWarningContainer)),
+                Text(alert.title ?? '--', style: AppTextStyles.s12SemiBold.copyWith(color: colors.onWarningContainer)),
                 const SizedBox(height: 2),
-                Text(alert.subtitle, style: AppTextStyles.s11Regular.copyWith(color: colors.onWarningContainer.withValues(alpha: 0.7))),
+                Text(alert.subtitle ?? '--', style: AppTextStyles.s11Regular.copyWith(color: colors.onWarningContainer.withValues(alpha: 0.7))),
               ],
             ),
           ),
@@ -223,7 +179,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildPaymentSnapshot(PaymentSnapshot snapshot) {
+  Widget _buildPaymentSnapshot(PaymentSnapshotEntity snapshot) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -245,8 +201,9 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
                 child: AnimatedBuilder(
                   animation: _progressAnim,
                   builder: (_, _) {
-                    final value = snapshot.progressPercent * _progressAnim.value;
-                    final pct = (snapshot.progressPercent * 100 * _progressAnim.value).toInt();
+                    final progressPercent = snapshot.progressPercent ?? 0;
+                    final value = progressPercent * _progressAnim.value;
+                    final pct = (progressPercent * 100 * _progressAnim.value).toInt();
                     return Stack(
                       fit: StackFit.expand,
                       children: [
@@ -274,7 +231,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _row(String k, String v) {
+  Widget _row(String k, String? v) {
     final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -283,7 +240,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
           Expanded(
             child: Text(k, style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim)),
           ),
-          Text(v, style: AppTextStyles.s12SemiBold.copyWith(color: colors.onSurface)),
+          Text(v ?? '--', style: AppTextStyles.s12SemiBold.copyWith(color: colors.onSurface)),
         ],
       ),
     );
@@ -330,7 +287,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildConstructionCard(ConstructionProgress construction) {
+  Widget _buildConstructionCard(ConstructionProgressEntity construction) {
     final colors = context.colors;
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -404,7 +361,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(color: colors.primaryTeal.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(6)),
                       child: Text(
-                        '${(construction.progressPercent * 100).toInt()}%',
+                        '${((construction.progressPercent ?? 0) * 100).toInt()}%',
                         style: AppTextStyles.s11SemiBold.copyWith(color: colors.primaryTeal),
                       ),
                     ),
@@ -414,7 +371,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: construction.progressPercent,
+                    value: construction.progressPercent ?? 0,
                     backgroundColor: colors.surfaceContainerHigh,
                     valueColor: AlwaysStoppedAnimation(colors.primaryTeal),
                     minHeight: 6,
@@ -428,7 +385,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildUnitSummary(UnitInfo unit) {
+  Widget _buildUnitSummary(UnitInfoEntity unit) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -467,19 +424,19 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _unitRow(String label, String value) {
+  Widget _unitRow(String label, String? value) {
     final colors = context.colors;
     return Row(
       children: [
         Expanded(
           child: Text(label, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceDim)),
         ),
-        Text(value, style: AppTextStyles.s12SemiBold.copyWith(color: colors.onSurface)),
+        Text(value ?? '--', style: AppTextStyles.s12SemiBold.copyWith(color: colors.onSurface)),
       ],
     );
   }
 
-  Widget _buildRecentActivity(List<ActivityItem> activities) {
+  Widget _buildRecentActivity(List<ActivityItemEntity> activities) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -508,7 +465,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
     );
   }
 
-  Widget _activityItem(ActivityItem item) {
+  Widget _activityItem(ActivityItemEntity item) {
     final colors = context.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,17 +475,17 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
           height: 38,
           padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(10)),
-          child: SvgPicture.asset(item.iconAsset),
+          child: SvgPicture.asset(item.iconAsset ?? ImageResources.icUpdates),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(item.title, style: AppTextStyles.s12SemiBold.copyWith(color: colors.onSurface)),
+              Text(item.title ?? '--', style: AppTextStyles.s12SemiBold.copyWith(color: colors.onSurface)),
               const SizedBox(height: 3),
               Text(
-                item.subtitle,
+                item.subtitle ?? '--',
                 style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -537,27 +494,8 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
           ),
         ),
         const SizedBox(width: 8),
-        Text(item.timeLabel, style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim)),
+        Text(item.timeLabel ?? '--', style: AppTextStyles.s10Regular.copyWith(color: colors.onSurfaceDim)),
       ],
-    );
-  }
-}
-
-class _AvatarWidget extends StatelessWidget {
-  const _AvatarWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colors.surfaceContainerHigh,
-        border: Border.all(color: colors.primaryTeal.withValues(alpha: 0.35)),
-      ),
-      child: Icon(Icons.person_rounded, size: 18, color: colors.primaryTealFixedDim),
     );
   }
 }

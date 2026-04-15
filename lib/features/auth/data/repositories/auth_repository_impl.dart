@@ -6,7 +6,7 @@ import 'package:temp_architecture_app_setup/core/error/failures.dart';
 import 'package:temp_architecture_app_setup/core/network/rest_service_base.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/datasources/auth_remote_datasource.dart';
-import 'package:temp_architecture_app_setup/features/auth/domain/entities/user.dart';
+import 'package:temp_architecture_app_setup/features/auth/domain/entities/user_entity.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/models/request_models/confirm_sign_up_model.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/models/request_models/resend_sign_up_code_model.dart';
 import 'package:temp_architecture_app_setup/features/auth/data/models/request_models/sign_in_model.dart';
@@ -22,7 +22,7 @@ class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl(this._remote);
 
   @override
-  FutureEitherFailure<User> signIn(SignInModel model) async {
+  FutureEitherFailure<UserEntity> signIn(SignInModel model) async {
     try {
       final user = await _remote.signIn(model);
       return Right(user);
@@ -109,7 +109,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  FutureEitherFailure<User?> getCurrentUser() async {
+  FutureEitherFailure<UserEntity?> getCurrentUser() async {
     try {
       final user = await _remote.fetchCurrentUser();
       return Right(user);

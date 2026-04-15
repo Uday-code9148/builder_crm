@@ -3,13 +3,13 @@ part of 'payment_bloc.dart';
 @immutable
 class PaymentState extends Equatable {
   final DataStatus status;
-  final PaymentsData? data;
+  final PaymentsDataEntity? data;
   final PaymentStatus? activeFilter;
   final String? error;
 
   const PaymentState({this.status = DataStatus.initial, this.data, this.activeFilter, this.error});
 
-  PaymentState copyWith({DataStatus? status, PaymentsData? data, PaymentStatus? activeFilter, bool clearFilter = false, String? error}) {
+  PaymentState copyWith({DataStatus? status, PaymentsDataEntity? data, PaymentStatus? activeFilter, bool clearFilter = false, String? error}) {
     return PaymentState(
       status: status ?? this.status,
       data: data ?? this.data,
@@ -18,10 +18,11 @@ class PaymentState extends Equatable {
     );
   }
 
-  List<PaymentItem> get filteredItems {
+  List<PaymentItemEntity> get filteredItems {
     if (data == null) return [];
-    if (activeFilter == null) return data!.items;
-    return data!.items.where((i) => i.status == activeFilter).toList();
+    final items = data!.items ?? const <PaymentItemEntity>[];
+    if (activeFilter == null) return items;
+    return items.where((i) => i.status == activeFilter).toList();
   }
 
   @override

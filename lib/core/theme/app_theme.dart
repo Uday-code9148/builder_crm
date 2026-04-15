@@ -159,7 +159,7 @@ class AppTheme {
       surfaceContainerHighest: ColorPalette.gray200,
       surfaceContainerHigh: ColorPalette.gray100,
       surfaceContainer: ColorPalette.whiteSolid,
-      surfaceContainerLow: const Color(0xFFF0F4F3),
+      surfaceContainerLow: Color(0xFFF0F4F3),
       surfaceContainerLowest: ColorPalette.white,
       onSurfaceVariant: ColorPalette.gray700,
       error: ColorPalette.fadedRed,

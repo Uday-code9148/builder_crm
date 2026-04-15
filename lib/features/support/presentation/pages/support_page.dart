@@ -6,13 +6,15 @@ import 'package:temp_architecture_app_setup/core/common/constants/app_display_co
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
+import 'package:temp_architecture_app_setup/core/enums/ticket_category.dart';
 import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket.dart';
+import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/blocs/support_bloc/support_bloc.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/widgets/support_loading_skeleton.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
@@ -58,7 +60,7 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
   Widget _buildBody(BuildContext context, SupportState state) {
     final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return Center(child: CircularProgressIndicator(color: colors.primaryTeal, strokeWidth: 2));
+      return const SupportLoadingSkeleton();
     }
     if (state.status == DataStatus.error) {
       return Center(
@@ -68,26 +70,40 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
 
     final tickets = state.filteredTickets;
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              const SizedBox(height: 24),
-              _buildHeader(),
-              const SizedBox(height: 16),
-              _buildNewTicketButton(),
-              const SizedBox(height: 20),
-              _buildFilters(context, state.activeFilter),
-              const SizedBox(height: 16),
-              ...tickets.map((t) => _TicketCard(ticket: t)),
-              const SizedBox(height: 8),
-              _buildLoadMore(),
-            ]),
+    return RefreshIndicator(
+      color: colors.primaryTeal,
+      notificationPredicate: (n) => n.depth == 0,
+      onRefresh: () async {
+        final bloc = context.read<SupportBloc>();
+        bloc.add(const SupportLoadRequested());
+        try {
+          await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
+        } catch (_) {
+          // End the indicator even if the request fails/timeout.
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 24),
+                _buildHeader(),
+                const SizedBox(height: 16),
+                _buildNewTicketButton(),
+                const SizedBox(height: 20),
+                _buildFilters(context, state.activeFilter),
+                const SizedBox(height: 16),
+                ...tickets.map((t) => _TicketCard(ticket: t)),
+                const SizedBox(height: 8),
+                _buildLoadMore(),
+              ]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -174,16 +190,18 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
 }
 
 class _TicketCard extends StatelessWidget {
-  final SupportTicket ticket;
+  final SupportTicketEntity ticket;
 
   const _TicketCard({required this.ticket});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final statusColor = ticket.status.color;
-    final categoryColor = ticket.category.color;
-    final timeLabelColor = ticket.isUrgent ? ColorPalette.overdueRed : colors.onSurfaceDim;
+    final status = ticket.status ?? TicketStatus.open;
+    final category = ticket.category ?? TicketCategory.legal;
+    final statusColor = status.color;
+    final categoryColor = category.color;
+    final timeLabelColor = (ticket.isUrgent ?? false) ? ColorPalette.overdueRed : colors.onSurfaceDim;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -214,7 +232,7 @@ class _TicketCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(color: colors.primaryTeal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                           child: Text(
-                            ticket.id,
+                            ticket.id ?? '--',
                             style: AppTextStyles.s11Regular.copyWith(color: colors.primaryTeal, fontWeight: FontWeight.w700, letterSpacing: 0.3),
                           ),
                         ),
@@ -236,16 +254,16 @@ class _TicketCard extends StatelessWidget {
                                 decoration: BoxDecoration(color: categoryColor, shape: BoxShape.circle),
                               ),
                               const SizedBox(width: 5),
-                              Text(ticket.category.label, style: AppTextStyles.s9SemiBold.copyWith(color: categoryColor, letterSpacing: 0.5)),
+                              Text(category.label, style: AppTextStyles.s9SemiBold.copyWith(color: categoryColor, letterSpacing: 0.5)),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(ticket.title, style: AppTextStyles.s15SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.2)),
+                    Text(ticket.title ?? '--', style: AppTextStyles.s15SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.2)),
                     const SizedBox(height: 3),
-                    Text(ticket.preview, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
+                    Text(ticket.preview ?? '--', style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -265,14 +283,14 @@ class _TicketCard extends StatelessWidget {
                                 decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                               ),
                               const SizedBox(width: 5),
-                              Text(ticket.status.label, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
+                              Text(status.label, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
                             ],
                           ),
                         ),
                         const Spacer(),
-                        Icon(ticket.status.timeIcon, size: 11, color: timeLabelColor),
+                        Icon(status.timeIcon, size: 11, color: timeLabelColor),
                         const SizedBox(width: 4),
-                        Text(ticket.timeLabel, style: AppTextStyles.s11Regular.copyWith(color: timeLabelColor)),
+                        Text(ticket.timeLabel ?? '--', style: AppTextStyles.s11Regular.copyWith(color: timeLabelColor)),
                       ],
                     ),
                   ],

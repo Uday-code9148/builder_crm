@@ -9,9 +9,10 @@ import 'package:temp_architecture_app_setup/core/enums/milestone_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/updates/domain/entities/milestone.dart';
-import 'package:temp_architecture_app_setup/features/updates/domain/entities/project_progress.dart';
+import 'package:temp_architecture_app_setup/features/updates/domain/entities/milestone_entity.dart';
+import 'package:temp_architecture_app_setup/features/updates/domain/entities/project_progress_entity.dart';
 import 'package:temp_architecture_app_setup/features/updates/presentation/bloc/updates_bloc/updates_bloc.dart';
+import 'package:temp_architecture_app_setup/features/updates/presentation/widgets/updates_loading_skeleton.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
   Widget _buildBody(UpdatesState state) {
     final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return Center(child: CircularProgressIndicator(color: colors.primaryTeal, strokeWidth: 2));
+      return const UpdatesLoadingSkeleton();
     }
     if (state.status == DataStatus.error) {
       return Center(
@@ -65,28 +66,43 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
 
     final data = state.data!;
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              const SizedBox(height: 24),
-              _buildProgressHero(data),
-              const SizedBox(height: 24),
-              _buildMilestoneList(data.milestones),
-              const SizedBox(height: 24),
-              _buildLatestPhotos(),
-            ]),
+    return RefreshIndicator(
+      color: colors.primaryTeal,
+      notificationPredicate: (n) => n.depth == 0,
+      onRefresh: () async {
+        final bloc = context.read<UpdatesBloc>();
+        bloc.add(const UpdatesLoadRequested());
+        try {
+          await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
+        } catch (_) {
+          // End the indicator even if the request fails/timeout.
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 24),
+                _buildProgressHero(data),
+                const SizedBox(height: 24),
+                _buildMilestoneList(data.milestones ?? const <MilestoneEntity>[]),
+                const SizedBox(height: 24),
+                _buildLatestPhotos(),
+              ]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildProgressHero(ProjectProgress data) {
+  Widget _buildProgressHero(ProjectProgressEntity data) {
     final colors = context.colors;
-    final pct = (data.overallProgress * 100).toInt();
+    final overallProgress = data.overallProgress ?? 0;
+    final pct = (overallProgress * 100).toInt();
     return Column(
       children: [
         SizedBox(
@@ -96,7 +112,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
             fit: StackFit.expand,
             children: [
               CircularProgressIndicator(
-                value: data.overallProgress,
+                value: overallProgress,
                 strokeWidth: 10,
                 backgroundColor: colors.surfaceContainerHigh,
                 valueColor: AlwaysStoppedAnimation<Color>(colors.primaryTeal),
@@ -119,9 +135,9 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
           ),
         ),
         const SizedBox(height: 24),
-        Text(data.projectName, style: AppTextStyles.s22SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.4)),
+        Text(data.projectName ?? '--', style: AppTextStyles.s22SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.4)),
         const SizedBox(height: 4),
-        Text(data.unit, style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
+        Text(data.unit ?? '--', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -135,7 +151,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
             children: [
               Icon(Icons.access_time_rounded, size: 11, color: colors.onSurfaceDim),
               const SizedBox(width: 4),
-              Text('Updated ${data.lastUpdated}', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+              Text('Updated ${data.lastUpdated ?? '--'}', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
             ],
           ),
         ),
@@ -143,7 +159,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
     );
   }
 
-  Widget _buildMilestoneList(List<Milestone> milestones) {
+  Widget _buildMilestoneList(List<MilestoneEntity> milestones) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +199,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
 }
 
 class _TimelineTile extends StatelessWidget {
-  final Milestone milestone;
+  final MilestoneEntity milestone;
   final bool isLast;
 
   const _TimelineTile({required this.milestone, required this.isLast});
@@ -191,11 +207,13 @@ class _TimelineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDone = milestone.status == MilestoneStatus.done;
-    final isInProgress = milestone.status == MilestoneStatus.inProgress;
-    final isUpcoming = milestone.status == MilestoneStatus.upcoming;
-    final nodeColor = milestone.status.nodeColor(colors);
-    final progressPct = '${(milestone.progress * 100).toInt()}%';
+    final status = milestone.status ?? MilestoneStatus.upcoming;
+    final progress = milestone.progress ?? 0;
+    final isDone = status == MilestoneStatus.done;
+    final isInProgress = status == MilestoneStatus.inProgress;
+    final isUpcoming = status == MilestoneStatus.upcoming;
+    final nodeColor = status.nodeColor(colors);
+    final progressPct = '${(progress * 100).toInt()}%';
 
     return IntrinsicHeight(
       child: Row(
@@ -269,7 +287,7 @@ class _TimelineTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          milestone.title,
+                          milestone.title ?? '--',
                           style: AppTextStyles.s13SemiBold.copyWith(color: isUpcoming ? colors.onSurfaceDim : colors.onSurface),
                         ),
                       ),
@@ -287,7 +305,7 @@ class _TimelineTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text(milestone.subtitle, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+                  Text(milestone.subtitle ?? '--', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
                   if (isInProgress) ...[
                     const SizedBox(height: 10),
                     Stack(
@@ -297,7 +315,7 @@ class _TimelineTile extends StatelessWidget {
                           decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(99)),
                         ),
                         FractionallySizedBox(
-                          widthFactor: milestone.progress,
+                          widthFactor: progress,
                           child: Container(
                             height: 6,
                             decoration: BoxDecoration(

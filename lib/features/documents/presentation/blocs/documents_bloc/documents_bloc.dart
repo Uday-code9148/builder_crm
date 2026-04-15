@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/documents/domain/entity/document.dart';
+import 'package:temp_architecture_app_setup/features/documents/domain/entity/document_entities.dart';
 import 'package:temp_architecture_app_setup/features/documents/domain/usecases/get_documents_usecase.dart';
 
 part 'documents_event.dart';

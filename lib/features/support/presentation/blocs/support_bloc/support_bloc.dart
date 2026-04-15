@@ -7,7 +7,7 @@ import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket.dart';
+import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/usecase/get_support_tickets_usecase.dart';
 
 part 'support_event.dart';

@@ -7,7 +7,7 @@ import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/enums/payment_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment.dart';
+import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment_entities.dart';
 import 'package:temp_architecture_app_setup/features/payments/domain/usecases/get_payments_usecase.dart';
 
 part 'payment_event.dart';

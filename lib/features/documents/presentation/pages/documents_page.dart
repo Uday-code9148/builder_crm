@@ -11,10 +11,11 @@ import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dar
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/documents/domain/entity/document.dart';
+import 'package:temp_architecture_app_setup/features/documents/domain/entity/document_entities.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/blocs/documents_bloc/documents_bloc.dart';
+import 'package:temp_architecture_app_setup/features/documents/presentation/widgets/documents_loading_skeleton.dart';
 
-Color _accentColor(String token) {
+Color _accentColor(String? token) {
   switch (token) {
     case 'secondaryPurple':
       return ColorPalette.secondaryPurple;
@@ -73,7 +74,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
   Widget _buildBody(DocumentsState state) {
     final colors = context.colors;
     if (state.status == DataStatus.loading) {
-      return Center(child: CircularProgressIndicator(color: colors.primaryTeal, strokeWidth: 2));
+      return const DocumentsLoadingSkeleton();
     }
     if (state.status == DataStatus.error) {
       return Center(
@@ -84,26 +85,40 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
 
     final data = state.data!;
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              const SizedBox(height: 24),
-              _buildSearch(),
-              const SizedBox(height: 16),
-              _buildTabs(),
-              const SizedBox(height: 24),
-              _buildSection(title: 'Legal Documents', accentColor: ColorPalette.secondaryPurple, items: data.legalDocs),
-              const SizedBox(height: 20),
-              _buildSection(title: 'Payment & Finance', accentColor: colors.primaryTeal, items: data.paymentDocs),
-              const SizedBox(height: 20),
-              _buildCertSection(data.certificates),
-            ]),
+    return RefreshIndicator(
+      color: colors.primaryTeal,
+      notificationPredicate: (n) => n.depth == 0,
+      onRefresh: () async {
+        final bloc = context.read<DocumentsBloc>();
+        bloc.add(const DocumentsLoadRequested());
+        try {
+          await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
+        } catch (_) {
+          // End the indicator even if the request fails/timeout.
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 24),
+                _buildSearch(),
+                const SizedBox(height: 16),
+                _buildTabs(),
+                const SizedBox(height: 24),
+                _buildSection(title: 'Legal Documents', accentColor: ColorPalette.secondaryPurple, items: data.legalDocs ?? const <DocumentItemEntity>[]),
+                const SizedBox(height: 20),
+                _buildSection(title: 'Payment & Finance', accentColor: colors.primaryTeal, items: data.paymentDocs ?? const <DocumentItemEntity>[]),
+                const SizedBox(height: 20),
+                _buildCertSection(data.certificates ?? const <CertDocumentEntity>[]),
+              ]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -163,7 +178,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildSection({required String title, required Color accentColor, required List<DocumentItem> items}) {
+  Widget _buildSection({required String title, required Color accentColor, required List<DocumentItemEntity> items}) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +216,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildCertSection(List<CertDocument> certs) {
+  Widget _buildCertSection(List<CertDocumentEntity> certs) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,34 +237,34 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
     );
   }
 
-  void _openDocumentDetails(DocumentItem doc) {
+  void _openDocumentDetails(DocumentItemEntity doc) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => DocumentDetailsPage(
           title: doc.title,
           subtitle: doc.subtitle,
-          categoryLabel: doc.category.label,
-          statusLabel: doc.status.label,
-          fileUrl: doc.fileUrl ?? '',
+          categoryLabel: doc.category?.label,
+          statusLabel: doc.status?.label,
+          fileUrl: doc.fileUrl,
         ),
       ),
     );
   }
 
-  void _openCertificateDetails(CertDocument cert) {
+  void _openCertificateDetails(CertDocumentEntity cert) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) =>
-            DocumentDetailsPage(title: cert.title, subtitle: cert.subtitle, categoryLabel: 'Certificate & Compliance', fileUrl: cert.fileUrl ?? ''),
+            DocumentDetailsPage(title: cert.title, subtitle: cert.subtitle, categoryLabel: 'Certificate & Compliance', fileUrl: cert.fileUrl),
       ),
     );
   }
 }
 
 class _DocRowTile extends StatelessWidget {
-  final DocumentItem item;
+  final DocumentItemEntity item;
   final VoidCallback onTap;
 
   const _DocRowTile({required this.item, required this.onTap});
@@ -257,8 +272,8 @@ class _DocRowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final statusLabel = item.status.label;
-    final statusColor = item.status.color;
+    final statusLabel = item.status?.label;
+    final statusColor = item.status?.color;
 
     return GestureDetector(
       onTap: onTap,
@@ -273,7 +288,7 @@ class _DocRowTile extends StatelessWidget {
               decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(8)),
               child: Center(
                 child: SvgPicture.asset(
-                  item.iconAsset,
+                  item.iconAsset ?? ImageResources.icDocuments,
                   width: 18,
                   height: 18,
                   colorFilter: const ColorFilter.mode(ColorPalette.primaryTealFixedDim, BlendMode.srcIn),
@@ -285,19 +300,19 @@ class _DocRowTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title, style: AppTextStyles.s13Medium.copyWith(color: colors.onSurface)),
-                  if (item.subtitle.isNotEmpty) ...[
+                  Text(item.title ?? '--', style: AppTextStyles.s13Medium.copyWith(color: colors.onSurface)),
+                  if ((item.subtitle ?? '').isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(item.subtitle, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+                    Text(item.subtitle ?? '', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
                   ],
                 ],
               ),
             ),
-            if (statusLabel != null) ...[
+            if (statusLabel != null && statusColor != null) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: statusColor!.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
                 child: Text(statusLabel, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
               ),
               const SizedBox(width: 8),
@@ -324,7 +339,7 @@ class _DocRowTile extends StatelessWidget {
 }
 
 class _CertCard extends StatelessWidget {
-  final CertDocument doc;
+  final CertDocumentEntity doc;
   final VoidCallback onTap;
 
   const _CertCard({required this.doc, required this.onTap});
@@ -361,11 +376,11 @@ class _CertCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SvgPicture.asset(doc.iconAsset, width: 26, height: 26, colorFilter: ColorFilter.mode(accent, BlendMode.srcIn)),
+                  SvgPicture.asset(doc.iconAsset ?? ImageResources.icDocuments, width: 26, height: 26, colorFilter: ColorFilter.mode(accent, BlendMode.srcIn)),
                   const SizedBox(height: 12),
-                  Text(doc.title, style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
+                  Text(doc.title ?? '--', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
                   const SizedBox(height: 3),
-                  Text(doc.subtitle, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
+                  Text(doc.subtitle ?? '--', style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
                   const SizedBox(height: 14),
                   GestureDetector(
                     onTap: onTap,

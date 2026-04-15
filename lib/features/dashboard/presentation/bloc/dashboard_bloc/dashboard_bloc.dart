@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data_entity.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/domain/usecases/get_dashboard_data_usecase.dart';
 
 part 'dashboard_event.dart';
