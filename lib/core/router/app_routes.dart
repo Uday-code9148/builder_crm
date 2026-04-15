@@ -7,4 +7,9 @@ class Routes {
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
   static const home = '/home';
+
+  // In-app pages
+  static const updates = '/updates';
+  static const documentDetails = '/document-details';
+  static const newTicket = '/support/new-ticket';
 }

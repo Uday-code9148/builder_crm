@@ -8,8 +8,9 @@ import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dar
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/core/theme/cubit/theme_cubit.dart';
+import 'package:temp_architecture_app_setup/core/router/app_router.dart';
+import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/sign_out/sign_out_cubit.dart';
-import 'package:temp_architecture_app_setup/features/updates/presentation/pages/updates_page.dart';
 
 class MorePage extends BaseStatelessWidget {
   final String headerTitle;
@@ -49,10 +50,7 @@ class MorePage extends BaseStatelessWidget {
                     subtitle: 'Track construction progress',
                     badge: '65%',
                     badgeColor: ColorPalette.warningAmber,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UpdatesPage()),
-                    ),
+                    onTap: () => appRouter.push(Routes.updates),
                   ),
                   const _MoreOption(
                     icon: Icons.photo_library_outlined,

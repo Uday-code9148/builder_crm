@@ -1,4 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:temp_architecture_app_setup/core/common/pages/document_details_page.dart';
 import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/core/router/route_observer.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/confirm_sign_up_page.dart';
@@ -8,7 +10,11 @@ import 'package:temp_architecture_app_setup/features/auth/presentation/pages/res
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/sign_up_page.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/splash_page.dart';
+import 'package:temp_architecture_app_setup/features/documents/domain/entity/document_entities.dart';
 import 'package:temp_architecture_app_setup/features/home/presentation/pages/home_page.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/blocs/create_ticket_bloc/create_ticket_bloc.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/pages/new_ticket_page.dart';
+import 'package:temp_architecture_app_setup/features/updates/presentation/pages/updates_page.dart';
 import 'package:temp_architecture_app_setup/main.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -30,5 +36,29 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => ResetPasswordPage(email: state.extra as String? ?? ''),
     ),
     GoRoute(path: Routes.home, builder: (context, state) => const HomePage()),
+    GoRoute(path: Routes.updates, builder: (context, state) => const UpdatesPage()),
+    GoRoute(
+      path: Routes.documentDetails,
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is DocumentItemEntity) {
+          return DocumentDetailsPage(
+            title: extra.title,
+            subtitle: extra.subtitle,
+            categoryLabel: extra.category?.label,
+            statusLabel: extra.status?.label,
+            fileUrl: extra.fileUrl,
+          );
+        }
+        if (extra is CertDocumentEntity) {
+          return DocumentDetailsPage(title: extra.title, subtitle: extra.subtitle, categoryLabel: 'Certificate & Compliance', fileUrl: extra.fileUrl);
+        }
+        return const DocumentDetailsPage();
+      },
+    ),
+    GoRoute(
+      path: Routes.newTicket,
+      builder: (context, state) => BlocProvider(create: (_) => CreateTicketBloc(), child: const NewTicketPage()),
+    ),
   ],
 );

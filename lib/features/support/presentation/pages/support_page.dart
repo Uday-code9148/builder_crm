@@ -12,10 +12,10 @@ import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dar
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
+import 'package:temp_architecture_app_setup/core/router/app_router.dart';
+import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/blocs/support_bloc/support_bloc.dart';
-import 'package:temp_architecture_app_setup/features/support/presentation/blocs/create_ticket_bloc/create_ticket_bloc.dart';
-import 'package:temp_architecture_app_setup/features/support/presentation/pages/new_ticket_page.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/widgets/support_loading_skeleton.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
@@ -131,11 +131,7 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
     final colors = context.colors;
     return GestureDetector(
       onTap: () async {
-        final created = await Navigator.of(context).push<SupportTicketEntity>(
-          MaterialPageRoute(
-            builder: (_) => BlocProvider(create: (_) => CreateTicketBloc(), child: const NewTicketPage()),
-          ),
-        );
+        final created = await appRouter.push<SupportTicketEntity>(Routes.newTicket);
         if (!mounted) return;
         if (created != null) context.read<SupportBloc>().add(SupportTicketAdded(created));
       },

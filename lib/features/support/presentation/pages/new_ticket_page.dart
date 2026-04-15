@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/app_form.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/app_text_form_field.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/selectable_item_bottom_sheet.dart';
@@ -48,7 +49,7 @@ class _NewTicketPageState extends State<NewTicketPage> {
       listenWhen: (p, c) => p.status != c.status,
       listener: (context, state) {
         if (state.status == CreateTicketStatus.success && state.createdTicket != null) {
-          Navigator.of(context).pop<SupportTicketEntity>(state.createdTicket);
+          context.pop<SupportTicketEntity>(state.createdTicket);
         }
       },
       child: AppForm(

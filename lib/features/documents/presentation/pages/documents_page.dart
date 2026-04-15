@@ -3,10 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
-import 'package:temp_architecture_app_setup/core/common/pages/document_details_page.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
+import 'package:temp_architecture_app_setup/core/router/app_router.dart';
+import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
@@ -238,28 +239,11 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
   }
 
   void _openDocumentDetails(DocumentItemEntity doc) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DocumentDetailsPage(
-          title: doc.title,
-          subtitle: doc.subtitle,
-          categoryLabel: doc.category?.label,
-          statusLabel: doc.status?.label,
-          fileUrl: doc.fileUrl,
-        ),
-      ),
-    );
+    appRouter.push(Routes.documentDetails, extra: doc);
   }
 
   void _openCertificateDetails(CertDocumentEntity cert) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            DocumentDetailsPage(title: cert.title, subtitle: cert.subtitle, categoryLabel: 'Certificate & Compliance', fileUrl: cert.fileUrl),
-      ),
-    );
+    appRouter.push(Routes.documentDetails, extra: cert);
   }
 }
 
