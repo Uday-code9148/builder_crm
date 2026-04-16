@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/common_more_widget.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data_entity.dart';
 
@@ -53,6 +55,7 @@ class DashboardViewModel {
   final DashboardConstructionVM construction;
   final DashboardUnitVM unitInfo;
   final List<DashboardActivityVM> activities;
+  final List<AppMenuEntry> projectMenuItems;
 
   const DashboardViewModel({
     required this.greeting,
@@ -61,6 +64,7 @@ class DashboardViewModel {
     required this.construction,
     required this.unitInfo,
     required this.activities,
+    required this.projectMenuItems,
   });
 
   factory DashboardViewModel.from(DashboardDataEntity data) {
@@ -100,6 +104,22 @@ class DashboardViewModel {
             ),
           )
           .toList(),
+      projectMenuItems: _buildProjectMenu(data.projects ?? const []),
     );
+  }
+
+  static List<AppMenuEntry> _buildProjectMenu(List<ProjectEntryEntity> projects) {
+    return [
+      const AppMenuHeaderEntry('Switch Project'),
+      ...projects.map(
+        (p) => AppMenuItemEntry(
+          icon: Icons.apartment_rounded,
+          title: p.name,
+          subtitle: '${p.unit} · ${p.statusLabel}',
+        ),
+      ),
+      const AppMenuDividerEntry(),
+      const AppMenuItemEntry(icon: Icons.add_circle_outline_rounded, title: 'Add New Property'),
+    ];
   }
 }

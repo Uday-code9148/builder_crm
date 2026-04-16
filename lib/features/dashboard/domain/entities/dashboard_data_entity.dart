@@ -40,6 +40,14 @@ class ActivityItemEntity {
   const ActivityItemEntity({this.iconAsset, this.title, this.subtitle, this.timeLabel});
 }
 
+class ProjectEntryEntity {
+  final String name;
+  final String unit;
+  final String statusLabel;
+
+  const ProjectEntryEntity({required this.name, required this.unit, required this.statusLabel});
+}
+
 class DashboardDataEntity {
   final String? userName;
   final String? greeting;
@@ -48,6 +56,7 @@ class DashboardDataEntity {
   final ConstructionProgressEntity? construction;
   final UnitInfoEntity? unitInfo;
   final List<ActivityItemEntity>? recentActivities;
+  final List<ProjectEntryEntity>? projects;
 
   const DashboardDataEntity({
     this.userName,
@@ -57,5 +66,6 @@ class DashboardDataEntity {
     this.construction,
     this.unitInfo,
     this.recentActivities,
+    this.projects,
   });
 }

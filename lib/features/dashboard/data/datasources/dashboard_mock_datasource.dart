@@ -15,6 +15,10 @@ class DashboardMockDataSource implements DashboardDataSource {
       paymentSnapshot: PaymentSnapshotEntity(totalPaid: '₹84,50,000', nextDue: '₹42,20,000', balance: '₹42,30,000', progressPercent: 0.65),
       construction: ConstructionProgressEntity(progressPercent: 0.49, phase: 'Phase 2 – MEP Works', projectName: 'The Emerald Pavilion', unit: 'Unit 402'),
       unitInfo: UnitInfoEntity(configuration: '3 BHK Luxury', coverArea: '1,840 sq.ft.', floorWing: '22W / A Wing'),
+      projects: [
+        ProjectEntryEntity(name: 'The Emerald Pavilion', unit: 'UNIT 402', statusLabel: 'Active'),
+        ProjectEntryEntity(name: 'Skyline Residencies', unit: 'UNIT 201', statusLabel: 'Upcoming'),
+      ],
       recentActivities: [
         ActivityItemEntity(
           iconAsset: ImageResources.icMaintainanceConfirmed,

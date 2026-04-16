@@ -71,13 +71,7 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
               subtitle: state.selectedSubtitle,
               projectWidget: CommonMoreWidget(
                 triggerIcon: Icons.home_work_rounded,
-                items: const [
-                  AppMenuHeaderEntry('Switch Project'),
-                  AppMenuItemEntry(icon: Icons.apartment_rounded, title: 'The Emerald Pavilion', subtitle: 'UNIT 402 · Active'),
-                  AppMenuItemEntry(icon: Icons.domain_rounded, title: 'Skyline Residencies', subtitle: 'UNIT 201 · Upcoming'),
-                  AppMenuDividerEntry(),
-                  AppMenuItemEntry(icon: Icons.add_circle_outline_rounded, title: 'Add New Property'),
-                ],
+                items: state.viewModel?.projectMenuItems ?? const [],
                 onSelected: (item) {
                   if (item.subtitle != null) {
                     context.read<DashboardBloc>().add(DashboardPropertySelected(title: item.title, subtitle: item.subtitle!));
