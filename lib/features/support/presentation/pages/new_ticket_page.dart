@@ -107,7 +107,7 @@ class _NewTicketPageState extends State<NewTicketPage> {
                 style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant, height: 1.35),
               ),
               const SizedBox(height: 18),
-              const _CategoryField(),
+              _CategoryField(),
               const SizedBox(height: 14),
               AppTextFormField(
                 labelText: 'Title',
@@ -176,8 +176,6 @@ class _NewTicketPageState extends State<NewTicketPage> {
 }
 
 class _CategoryField extends StatelessWidget {
-  const _CategoryField();
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -200,9 +198,9 @@ class _CategoryField extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
-                  color: colors.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.22)),
+                  // color: colors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Row(
                   children: [

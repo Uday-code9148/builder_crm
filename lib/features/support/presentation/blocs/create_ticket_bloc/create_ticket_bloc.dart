@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/app_snackbar.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/selectable_item_bottom_sheet.dart';
+import 'package:temp_architecture_app_setup/core/enums/snackbar_type.dart';
 import 'package:temp_architecture_app_setup/core/enums/ticket_category.dart';
 import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
+import 'package:temp_architecture_app_setup/main.dart';
 
 part 'create_ticket_event.dart';
+
 part 'create_ticket_state.dart';
 
 class CreateTicketBloc extends Bloc<CreateTicketEvent, CreateTicketState> {
@@ -30,6 +34,7 @@ class CreateTicketBloc extends Bloc<CreateTicketEvent, CreateTicketState> {
   }
 
   Future<void> _onSubmitted(CreateTicketSubmitted event, Emitter<CreateTicketState> emit) async {
+    if (!_canSubmit(event)) return;
     emit(state.copyWith(status: CreateTicketStatus.submitting, error: null));
     await Future<void>.delayed(const Duration(milliseconds: 2050));
 
@@ -46,5 +51,17 @@ class CreateTicketBloc extends Bloc<CreateTicketEvent, CreateTicketState> {
     );
 
     emit(state.copyWith(status: CreateTicketStatus.success, createdTicket: created));
+  }
+
+  bool _canSubmit(CreateTicketSubmitted event) {
+    if (event.title.trim().isEmpty) {
+      AppSnackbar.show(message: 'Please Enter the title. ', navigatorKey: MyApp.navigatorKey, type: SnackbarType.error);
+      return false;
+    }
+    if (event.description.trim().isEmpty) {
+      AppSnackbar.show(message: 'Please Enter the description. ', navigatorKey: MyApp.navigatorKey, type: SnackbarType.error);
+      return false;
+    }
+    return true;
   }
 }
