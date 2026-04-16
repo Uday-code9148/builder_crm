@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
 import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
+import 'package:temp_architecture_app_setup/core/enums/app_sub_page.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 import 'package:temp_architecture_app_setup/core/theme/cubit/theme_cubit.dart';
-import 'package:temp_architecture_app_setup/core/router/app_router.dart';
-import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/sign_out/sign_out_cubit.dart';
 
 class MorePage extends BaseStatelessWidget {
@@ -17,6 +16,7 @@ class MorePage extends BaseStatelessWidget {
   final String? headerSubtitle;
   final String projectName;
   final String projectUnitPhase;
+  final void Function(AppSubPage page)? onNavigateTo;
 
   const MorePage({
     super.key,
@@ -24,6 +24,7 @@ class MorePage extends BaseStatelessWidget {
     this.headerSubtitle,
     this.projectName = AppDisplayConstants.projectName,
     this.projectUnitPhase = AppDisplayConstants.projectUnitPhase,
+    this.onNavigateTo,
   });
 
   @override
@@ -50,7 +51,7 @@ class MorePage extends BaseStatelessWidget {
                     subtitle: 'Track construction progress',
                     badge: '65%',
                     badgeColor: ColorPalette.warningAmber,
-                    onTap: () => appRouter.push(Routes.updates),
+                    onTap: () => onNavigateTo?.call(AppSubPage.milestones),
                   ),
                   const _MoreOption(
                     icon: Icons.photo_library_outlined,
@@ -67,10 +68,11 @@ class MorePage extends BaseStatelessWidget {
                 _buildSectionLabel(context, 'Account'),
                 const SizedBox(height: 10),
                 _buildGroup(context, [
-                  const _MoreOption(
+                  _MoreOption(
                     icon: Icons.person_outline_rounded,
                     label: 'My Profile',
                     subtitle: 'Name, contact & preferences',
+                    onTap: () => onNavigateTo?.call(AppSubPage.profile),
                   ),
                   const _MoreOption(
                     icon: Icons.notifications_outlined,

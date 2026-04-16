@@ -59,13 +59,7 @@ class CommonMoreWidget extends StatelessWidget {
   /// Fully custom trigger widget. Replaces the default icon button.
   final Widget? triggerWidget;
 
-  const CommonMoreWidget({
-    super.key,
-    required this.items,
-    this.onSelected,
-    this.triggerIcon = Icons.more_vert,
-    this.triggerWidget,
-  });
+  const CommonMoreWidget({super.key, required this.items, this.onSelected, this.triggerIcon = Icons.more_vert, this.triggerWidget});
 
   Future<void> _show(BuildContext context, Offset tapPosition) async {
     final colors = context.colors;
@@ -76,10 +70,7 @@ class CommonMoreWidget extends StatelessWidget {
       color: colors.surfaceContainer,
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      position: RelativeRect.fromRect(
-        Rect.fromPoints(tapPosition, tapPosition),
-        Offset.zero & overlay.size,
-      ),
+      position: RelativeRect.fromRect(Rect.fromPoints(tapPosition, tapPosition), Offset.zero & overlay.size),
       items: _buildItems(context),
     );
 
@@ -99,12 +90,7 @@ class CommonMoreWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Text(
                 label.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: colors.onSurfaceDim,
-                  letterSpacing: 1.2,
-                ),
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: colors.onSurfaceDim, letterSpacing: 1.2),
               ),
             ),
           );
@@ -131,7 +117,8 @@ class CommonMoreWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    final trigger = triggerWidget ??
+    final trigger =
+        triggerWidget ??
         Container(
           width: 36,
           height: 36,
@@ -143,10 +130,7 @@ class CommonMoreWidget extends StatelessWidget {
           child: Icon(triggerIcon, size: 18, color: colors.white),
         );
 
-    return GestureDetector(
-      onTapDown: (d) => _show(context, d.globalPosition),
-      child: trigger,
-    );
+    return GestureDetector(onTapDown: (d) => _show(context, d.globalPosition), child: trigger);
   }
 }
 
@@ -165,10 +149,7 @@ class _ItemRow extends StatelessWidget {
         Container(
           width: 32,
           height: 32,
-          decoration: BoxDecoration(
-            color: colors.primaryTeal.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: colors.primaryTeal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(item.icon, size: 16, color: colors.primaryTeal),
         ),
         const SizedBox(width: 12),

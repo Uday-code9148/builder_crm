@@ -25,9 +25,8 @@ class _NewTicketPageState extends State<NewTicketPage> {
 
   @override
   void initState() {
-    context.read<CreateTicketBloc>().add(CreateTicketInitialEvent());
-
     super.initState();
+    context.read<CreateTicketBloc>().add(CreateTicketInitialEvent());
   }
 
   @override
@@ -39,7 +38,9 @@ class _NewTicketPageState extends State<NewTicketPage> {
 
   void _submit(BuildContext context) {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    context.read<CreateTicketBloc>().add(CreateTicketSubmitted(title: _titleController.text, description: _descController.text));
+    context.read<CreateTicketBloc>().add(
+      CreateTicketSubmitted(title: _titleController.text, description: _descController.text),
+    );
   }
 
   @override
@@ -54,12 +55,16 @@ class _NewTicketPageState extends State<NewTicketPage> {
       },
       child: AppForm(
         backgroundColor: colors.surface,
-        forceDarkTheme: true,
+        forceDarkTheme: false,
         formKey: _formKey,
         appBar: AppBar(
           backgroundColor: colors.surface,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
-          title: Text('New Ticket', style: AppTextStyles.s16SemiBold.copyWith(color: colors.onSurface)),
+          title: Text(
+            'New Ticket',
+            style: AppTextStyles.s16SemiBold.copyWith(color: colors.onSurface),
+          ),
           centerTitle: false,
           iconTheme: IconThemeData(color: colors.onSurface),
         ),
@@ -87,7 +92,11 @@ class _NewTicketPageState extends State<NewTicketPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               ),
               child: busy
-                  ? SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimaryTeal))
+                  ? SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimaryTeal),
+                    )
                   : const Text('Submit'),
             );
           },
@@ -99,11 +108,16 @@ class _NewTicketPageState extends State<NewTicketPage> {
             children: [
               Text(
                 'Create a support request',
-                style: AppTextStyles.s24Bold.copyWith(color: colors.onSurface, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.4),
+                style: AppTextStyles.s24Bold.copyWith(
+                  color: colors.onSurface,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Give a short title and a clear description. We’ll mark it as Open.',
+                'Give a short title and a clear description. We\'ll mark it as Open.',
                 style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant, height: 1.35),
               ),
               const SizedBox(height: 18),
@@ -192,13 +206,11 @@ class _CategoryField extends StatelessWidget {
               canSearchItems: false,
               selectedItem: state.category,
               selectableItems: state.categoryItems,
-              onItemSelected: (item) {
-                context.read<CreateTicketBloc>().add(CreateTicketCategoryChanged(item));
-              },
+              onItemSelected: (item) => context.read<CreateTicketBloc>().add(CreateTicketCategoryChanged(item)),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
-                  // color: colors.surfaceContainerHigh,
+                  color: colors.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.3), width: 1),
                 ),
@@ -207,12 +219,15 @@ class _CategoryField extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: BoxDecoration(color: value?.value?.color ?? ColorPalette.pendingTeal, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: value?.value?.color ?? ColorPalette.pendingTeal,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        value?.title ?? "select",
+                        value?.title ?? 'Select',
                         style: AppTextStyles.s12Regular.copyWith(color: colors.onSurface),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

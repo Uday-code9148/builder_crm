@@ -85,6 +85,8 @@ import 'package:temp_architecture_app_setup/features/documents/domain/usecases/g
     as _i142;
 import 'package:temp_architecture_app_setup/features/documents/presentation/blocs/documents_bloc/documents_bloc.dart'
     as _i1033;
+import 'package:temp_architecture_app_setup/features/home/presentation/bloc/home_bloc/home_bloc.dart'
+    as _i910;
 import 'package:temp_architecture_app_setup/features/payments/data/datasources/payments_datasource.dart'
     as _i128;
 import 'package:temp_architecture_app_setup/features/payments/data/datasources/payments_mock_datasource.dart'
@@ -130,6 +132,7 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final networkModule = _$NetworkModule();
+    gh.factory<_i910.HomeBloc>(() => _i910.HomeBloc());
     gh.singleton<_i185.RestClient>(() => networkModule.restClient);
     gh.singleton<_i126.AmplifyService>(() => _i126.AmplifyService());
     gh.singleton<_i597.HiveService>(() => _i597.HiveService());

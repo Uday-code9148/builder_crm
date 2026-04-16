@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
+import 'package:temp_architecture_app_setup/core/enums/app_sub_page.dart';
 import 'package:temp_architecture_app_setup/core/enums/home_tab.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
@@ -13,57 +13,85 @@ import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/cubit/sign_out/sign_out_cubit.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/pages/documents_page.dart';
+import 'package:temp_architecture_app_setup/features/home/presentation/bloc/home_bloc/home_bloc.dart';
 import 'package:temp_architecture_app_setup/features/more/presentation/pages/more_page.dart';
 import 'package:temp_architecture_app_setup/features/payments/presentation/pages/payments_page.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/pages/support_page.dart';
+import 'package:temp_architecture_app_setup/features/profile/presentation/pages/profile_page.dart';
+import 'package:temp_architecture_app_setup/features/updates/presentation/pages/updates_page.dart';
 
 class HomePage extends BaseStatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget buildContent(BuildContext context) {
-    return BlocProvider(create: (_) => getIt<SignOutCubit>(), child: const _HomeShell());
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<HomeBloc>()),
+        BlocProvider(create: (_) => getIt<SignOutCubit>()),
+      ],
+      child: const _HomeShell(),
+    );
   }
 }
 
-class _HomeShell extends BaseStatefulWidget {
+class _HomeShell extends BaseStatelessWidget {
   const _HomeShell();
 
-  @override
-  State<_HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends BaseState<_HomeShell> {
-  HomeTab _currentTab = HomeTab.home;
+  // Add one case per AppSubPage value — compiler enforces exhaustiveness.
+  Widget _widgetForSubPage(AppSubPage page) => switch (page) {
+    AppSubPage.milestones => const UpdatesPage(),
+    AppSubPage.profile => const ProfilePage(),
+  };
 
   @override
   Widget buildContent(BuildContext context) {
     return BlocListener<SignOutCubit, SignOutState>(
       listenWhen: (prev, curr) => !prev.canGoLogin && curr.canGoLogin,
       listener: (context, state) => context.go(Routes.login),
-      child: Scaffold(
-        backgroundColor: context.colors.surface,
-        body: IndexedStack(
-          index: _currentTab.index,
-          children: [
-            DashboardPage(onNavigateToTab: _onTabSelected),
-            const PaymentsPage(),
-            const DocumentsPage(),
-            const SupportPage(),
-            const MorePage(),
-          ],
+      // PopScope: intercept Android back when a sub-page is active — clear it
+      // instead of popping the entire home route.
+      child: BlocSelector<HomeBloc, HomeState, bool>(
+        selector: (state) => state.subPage == null,
+        builder: (context, canPop) => PopScope(
+          canPop: canPop,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) context.read<HomeBloc>().add(HomeSubPageCleared());
+          },
+          child: Scaffold(
+            backgroundColor: context.colors.surface,
+            // IndexedStack only rebuilds when the visible page index changes.
+            body: BlocSelector<HomeBloc, HomeState, int>(
+              selector: (state) => state.stackIndex,
+              builder: (context, stackIndex) => IndexedStack(
+                index: stackIndex,
+                children: [
+                  DashboardPage(
+                    onNavigateToTab: (i) => context.read<HomeBloc>().add(HomeTabChanged(HomeTab.values[i])),
+                  ),
+                  const PaymentsPage(),
+                  const DocumentsPage(),
+                  const SupportPage(),
+                  MorePage(
+                    onNavigateTo: (page) => context.read<HomeBloc>().add(HomeSubPageChanged(page)),
+                  ),
+                  ...AppSubPage.values.map(_widgetForSubPage),
+                ],
+              ),
+            ),
+            // Bottom nav only rebuilds when the highlighted tab changes.
+            bottomNavigationBar: BlocSelector<HomeBloc, HomeState, HomeTab>(
+              selector: (state) => state.activeNavTab,
+              builder: (context, activeNavTab) => _ArchBottomNav(
+                currentTab: activeNavTab,
+                tabs: HomeTab.values,
+                onTap: (tab) => context.read<HomeBloc>().add(HomeTabChanged(tab)),
+              ),
+            ),
+          ),
         ),
-        bottomNavigationBar: _ArchBottomNav(currentTab: _currentTab, tabs: HomeTab.values, onTap: (tab) => setState(() => _currentTab = tab)),
       ),
     );
-  }
-
-  void _onTabSelected(int index) {
-    final targetTab = HomeTab.values[index];
-    if (_currentTab == targetTab) {
-      return;
-    }
-    setState(() => _currentTab = targetTab);
   }
 }
 
