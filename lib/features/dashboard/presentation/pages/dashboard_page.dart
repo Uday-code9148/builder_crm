@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateful_widget.dart';
 import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
+import 'package:temp_architecture_app_setup/core/common/widgets/common_more_widget.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
@@ -64,7 +65,26 @@ class _DashboardPageState extends BaseState<DashboardPage> with AutomaticKeepAli
           final colors = context.colors;
           return Scaffold(
             backgroundColor: colors.surface,
-            appBar: buildCuratorGlassAppBar(context: context, title: widget.headerTitle, subtitle: widget.headerSubtitle),
+            appBar: buildCuratorGlassAppBar(
+              context: context,
+              title: state.selectedTitle,
+              subtitle: state.selectedSubtitle,
+              projectWidget: CommonMoreWidget(
+                triggerIcon: Icons.home_work_rounded,
+                items: const [
+                  AppMenuHeaderEntry('Switch Project'),
+                  AppMenuItemEntry(icon: Icons.apartment_rounded, title: 'The Emerald Pavilion', subtitle: 'UNIT 402 · Active'),
+                  AppMenuItemEntry(icon: Icons.domain_rounded, title: 'Skyline Residencies', subtitle: 'UNIT 201 · Upcoming'),
+                  AppMenuDividerEntry(),
+                  AppMenuItemEntry(icon: Icons.add_circle_outline_rounded, title: 'Add New Property'),
+                ],
+                onSelected: (item) {
+                  if (item.subtitle != null) {
+                    context.read<DashboardBloc>().add(DashboardPropertySelected(title: item.title, subtitle: item.subtitle!));
+                  }
+                },
+              ),
+            ),
             body: RefreshIndicator(
               color: colors.primaryTeal,
               notificationPredicate: (n) => n.depth == 0,

@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data_entity.dart';
@@ -18,6 +19,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
   DashboardBloc(this._getDashboardData) : super(const DashboardState()) {
     on<DashboardLoadRequested>(_onLoad);
+    on<DashboardPropertySelected>(_onPropertySelected);
+  }
+
+  void _onPropertySelected(DashboardPropertySelected event, Emitter<DashboardState> emit) {
+    emit(state.copyWith(selectedTitle: event.title, selectedSubtitle: event.subtitle));
   }
 
   FutureOr<void> _onLoad(DashboardLoadRequested event, Emitter<DashboardState> emit) async {

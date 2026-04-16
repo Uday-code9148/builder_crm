@@ -6,8 +6,26 @@ import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dar
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
 
-AppBar buildCuratorGlassAppBar({required BuildContext context, String title = AppDisplayConstants.appTitle, String? subtitle}) {
+AppBar buildCuratorGlassAppBar({
+  required BuildContext context,
+  String title = AppDisplayConstants.appTitle,
+  String? subtitle,
+  Widget? projectWidget,
+}) {
   final colors = context.colors;
+
+  final Widget leadingIcon = projectWidget ??
+      Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: colors.primaryTealFixed,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [BoxShadow(color: colors.onPrimaryTeal.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Icon(Icons.home_work_rounded, size: 18, color: colors.white),
+      );
+
   return AppBar(
     backgroundColor: ColorPalette.transparent,
     surfaceTintColor: ColorPalette.transparent,
@@ -30,16 +48,7 @@ AppBar buildCuratorGlassAppBar({required BuildContext context, String title = Ap
     title: Row(
       children: [
         const SizedBox(width: 20),
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: colors.primaryTealFixed,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [BoxShadow(color: colors.onPrimaryTeal.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4))],
-          ),
-          child: Icon(Icons.home_work_rounded, size: 18, color: colors.white),
-        ),
+        leadingIcon,
         const SizedBox(width: 10),
         subtitle == null
             ? Text(title, style: AppTextStyles.s13SemiBold.copyWith(color: colors.onSurface))
