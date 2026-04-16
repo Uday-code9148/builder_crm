@@ -6,7 +6,6 @@ import 'package:temp_architecture_app_setup/core/common/constants/app_display_co
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
-import 'package:temp_architecture_app_setup/core/enums/ticket_category.dart';
 import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
@@ -16,6 +15,7 @@ import 'package:temp_architecture_app_setup/core/router/app_router.dart';
 import 'package:temp_architecture_app_setup/core/router/app_routes.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/blocs/support_bloc/support_bloc.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/helpers/support_view_model.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/widgets/support_loading_skeleton.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // required by AutomaticKeepAliveClientMixin
+    super.build(context);
     return buildContent(context);
   }
 
@@ -61,9 +61,7 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
 
   Widget _buildBody(BuildContext context, SupportState state) {
     final colors = context.colors;
-    if (state.status == DataStatus.loading) {
-      return const SupportLoadingSkeleton();
-    }
+    if (state.status == DataStatus.loading) return const SupportLoadingSkeleton();
     if (state.status == DataStatus.error) {
       return Center(
         child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
@@ -80,9 +78,7 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
         bloc.add(const SupportLoadRequested());
         try {
           await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
-        } catch (_) {
-          // End the indicator even if the request fails/timeout.
-        }
+        } catch (_) {}
       },
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -199,18 +195,14 @@ class _SupportPageState extends BaseState<SupportPage> with AutomaticKeepAliveCl
 }
 
 class _TicketCard extends StatelessWidget {
-  final SupportTicketEntity ticket;
+  final TicketVM ticket;
 
   const _TicketCard({required this.ticket});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final status = ticket.status ?? TicketStatus.open;
-    final category = ticket.category ?? TicketCategory.legal;
-    final statusColor = status.color;
-    final categoryColor = category.color;
-    final timeLabelColor = (ticket.isUrgent ?? false) ? ColorPalette.overdueRed : colors.onSurfaceDim;
+    final timeLabelColor = ticket.isUrgent ? ColorPalette.overdueRed : colors.onSurfaceDim;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -225,7 +217,7 @@ class _TicketCard extends StatelessWidget {
             Container(
               width: 6,
               decoration: BoxDecoration(
-                color: statusColor,
+                color: ticket.statusColor,
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
               ),
             ),
@@ -241,7 +233,7 @@ class _TicketCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(color: colors.primaryTeal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                           child: Text(
-                            ticket.id ?? '--',
+                            ticket.id,
                             style: AppTextStyles.s11Regular.copyWith(color: colors.primaryTeal, fontWeight: FontWeight.w700, letterSpacing: 0.3),
                           ),
                         ),
@@ -250,56 +242,48 @@ class _TicketCard extends StatelessWidget {
                           height: 28,
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           decoration: BoxDecoration(
-                            color: categoryColor.withValues(alpha: 0.15),
+                            color: ticket.categoryColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: categoryColor.withValues(alpha: 0.2), width: 1),
+                            border: Border.all(color: ticket.categoryColor.withValues(alpha: 0.2), width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(color: categoryColor, shape: BoxShape.circle),
-                              ),
+                              Container(width: 6, height: 6, decoration: BoxDecoration(color: ticket.categoryColor, shape: BoxShape.circle)),
                               const SizedBox(width: 5),
-                              Text(category.label, style: AppTextStyles.s9SemiBold.copyWith(color: categoryColor, letterSpacing: 0.5)),
+                              Text(ticket.categoryLabel, style: AppTextStyles.s9SemiBold.copyWith(color: ticket.categoryColor, letterSpacing: 0.5)),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(ticket.title ?? '--', style: AppTextStyles.s15SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.2)),
+                    Text(ticket.title, style: AppTextStyles.s15SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.2)),
                     const SizedBox(height: 3),
-                    Text(ticket.preview ?? '--', style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
+                    Text(ticket.preview, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.12),
+                            color: ticket.statusColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
+                            border: Border.all(color: ticket.statusColor.withValues(alpha: 0.3), width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                              ),
+                              Container(width: 5, height: 5, decoration: BoxDecoration(color: ticket.statusColor, shape: BoxShape.circle)),
                               const SizedBox(width: 5),
-                              Text(status.label, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
+                              Text(ticket.statusLabel, style: AppTextStyles.s10SemiBold.copyWith(color: ticket.statusColor)),
                             ],
                           ),
                         ),
                         const Spacer(),
-                        Icon(status.timeIcon, size: 11, color: timeLabelColor),
+                        Icon(ticket.timeIcon, size: 11, color: timeLabelColor),
                         const SizedBox(width: 4),
-                        Text(ticket.timeLabel ?? '--', style: AppTextStyles.s11Regular.copyWith(color: timeLabelColor)),
+                        Text(ticket.timeLabel, style: AppTextStyles.s11Regular.copyWith(color: timeLabelColor)),
                       ],
                     ),
                   ],

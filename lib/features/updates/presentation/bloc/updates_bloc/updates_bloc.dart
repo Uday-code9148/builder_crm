@@ -6,8 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/updates/domain/entities/project_progress_entity.dart';
 import 'package:temp_architecture_app_setup/features/updates/domain/usecases/get_project_progress_usecase.dart';
+import 'package:temp_architecture_app_setup/features/updates/presentation/helpers/updates_view_model.dart';
 
 part 'updates_event.dart';
 part 'updates_state.dart';
@@ -25,7 +25,7 @@ class UpdatesBloc extends Bloc<UpdatesEvent, UpdatesState> {
     final result = await _getProjectProgress(const NoParams());
     result.fold(
       (failure) => emit(state.copyWith(status: DataStatus.error, error: failure.message)),
-      (data) => emit(state.copyWith(status: DataStatus.loaded, data: data)),
+      (data) => emit(state.copyWith(status: DataStatus.loaded, viewModel: UpdatesViewModel.from(data))),
     );
   }
 }

@@ -7,8 +7,8 @@ import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/dashboard/domain/entities/dashboard_data_entity.dart';
 import 'package:temp_architecture_app_setup/features/dashboard/domain/usecases/get_dashboard_data_usecase.dart';
+import 'package:temp_architecture_app_setup/features/dashboard/presentation/helpers/dashboard_view_model.dart';
 
 part 'dashboard_event.dart';
 part 'dashboard_state.dart';
@@ -31,7 +31,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     final result = await _getDashboardData(const NoParams());
     result.fold(
       (failure) => emit(state.copyWith(status: DataStatus.error, error: failure.message)),
-      (data) => emit(state.copyWith(status: DataStatus.loaded, data: data)),
+      (data) => emit(state.copyWith(status: DataStatus.loaded, viewModel: DashboardViewModel.from(data))),
     );
   }
 }

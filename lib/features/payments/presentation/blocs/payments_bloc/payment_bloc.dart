@@ -7,8 +7,8 @@ import 'package:injectable/injectable.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
 import 'package:temp_architecture_app_setup/core/enums/payment_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
-import 'package:temp_architecture_app_setup/features/payments/domain/entities/payment_entities.dart';
 import 'package:temp_architecture_app_setup/features/payments/domain/usecases/get_payments_usecase.dart';
+import 'package:temp_architecture_app_setup/features/payments/presentation/helpers/payments_view_model.dart';
 
 part 'payment_event.dart';
 part 'payment_state.dart';
@@ -27,7 +27,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final result = await _getPayments(const NoParams());
     result.fold(
       (failure) => emit(state.copyWith(status: DataStatus.error, error: failure.message)),
-      (data) => emit(state.copyWith(status: DataStatus.loaded, data: data)),
+      (data) => emit(state.copyWith(status: DataStatus.loaded, viewModel: PaymentsViewModel.from(data))),
     );
   }
 

@@ -5,13 +5,11 @@ import 'package:temp_architecture_app_setup/core/common/constants/app_display_co
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
 import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/enums/data_status.dart';
-import 'package:temp_architecture_app_setup/core/enums/milestone_status.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/updates/domain/entities/milestone_entity.dart';
-import 'package:temp_architecture_app_setup/features/updates/domain/entities/project_progress_entity.dart';
 import 'package:temp_architecture_app_setup/features/updates/presentation/bloc/updates_bloc/updates_bloc.dart';
+import 'package:temp_architecture_app_setup/features/updates/presentation/helpers/updates_view_model.dart';
 import 'package:temp_architecture_app_setup/features/updates/presentation/widgets/updates_loading_skeleton.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
@@ -32,7 +30,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // required by AutomaticKeepAliveClientMixin
+    super.build(context);
     return buildContent(context);
   }
 
@@ -54,17 +52,15 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
 
   Widget _buildBody(UpdatesState state) {
     final colors = context.colors;
-    if (state.status == DataStatus.loading) {
-      return const UpdatesLoadingSkeleton();
-    }
+    if (state.status == DataStatus.loading) return const UpdatesLoadingSkeleton();
     if (state.status == DataStatus.error) {
       return Center(
         child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
       );
     }
-    if (state.data == null) return const SizedBox.shrink();
+    if (state.viewModel == null) return const SizedBox.shrink();
 
-    final data = state.data!;
+    final vm = state.viewModel!;
 
     return RefreshIndicator(
       color: colors.primaryTeal,
@@ -74,9 +70,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
         bloc.add(const UpdatesLoadRequested());
         try {
           await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
-        } catch (_) {
-          // End the indicator even if the request fails/timeout.
-        }
+        } catch (_) {}
       },
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -86,9 +80,9 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 24),
-                _buildProgressHero(data),
+                _buildProgressHero(vm),
                 const SizedBox(height: 24),
-                _buildMilestoneList(data.milestones ?? const <MilestoneEntity>[]),
+                _buildMilestoneList(vm.milestones),
                 const SizedBox(height: 24),
                 _buildLatestPhotos(),
               ]),
@@ -99,10 +93,8 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
     );
   }
 
-  Widget _buildProgressHero(ProjectProgressEntity data) {
+  Widget _buildProgressHero(UpdatesViewModel vm) {
     final colors = context.colors;
-    final overallProgress = data.overallProgress ?? 0;
-    final pct = (overallProgress * 100).toInt();
     return Column(
       children: [
         SizedBox(
@@ -112,7 +104,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
             fit: StackFit.expand,
             children: [
               CircularProgressIndicator(
-                value: overallProgress,
+                value: vm.overallProgress,
                 strokeWidth: 10,
                 backgroundColor: colors.surfaceContainerHigh,
                 valueColor: AlwaysStoppedAnimation<Color>(colors.primaryTeal),
@@ -123,7 +115,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '$pct%',
+                      vm.overallProgressPct,
                       style: AppTextStyles.s24Bold.copyWith(fontSize: 40, fontWeight: FontWeight.w900, color: colors.onSurface, letterSpacing: -1),
                     ),
                     const SizedBox(height: 2),
@@ -135,9 +127,9 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
           ),
         ),
         const SizedBox(height: 24),
-        Text(data.projectName ?? '--', style: AppTextStyles.s22SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.4)),
+        Text(vm.projectName, style: AppTextStyles.s22SemiBold.copyWith(color: colors.onSurface, letterSpacing: -0.4)),
         const SizedBox(height: 4),
-        Text(data.unit ?? '--', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
+        Text(vm.unit, style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -151,7 +143,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
             children: [
               Icon(Icons.access_time_rounded, size: 11, color: colors.onSurfaceDim),
               const SizedBox(width: 4),
-              Text('Updated ${data.lastUpdated ?? '--'}', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+              Text('Updated ${vm.lastUpdatedLabel}', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
             ],
           ),
         ),
@@ -159,7 +151,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
     );
   }
 
-  Widget _buildMilestoneList(List<MilestoneEntity> milestones) {
+  Widget _buildMilestoneList(List<MilestoneVM> milestones) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +191,7 @@ class _UpdatesPageState extends BaseState<UpdatesPage> with AutomaticKeepAliveCl
 }
 
 class _TimelineTile extends StatelessWidget {
-  final MilestoneEntity milestone;
+  final MilestoneVM milestone;
   final bool isLast;
 
   const _TimelineTile({required this.milestone, required this.isLast});
@@ -207,13 +199,7 @@ class _TimelineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final status = milestone.status ?? MilestoneStatus.upcoming;
-    final progress = milestone.progress ?? 0;
-    final isDone = status == MilestoneStatus.done;
-    final isInProgress = status == MilestoneStatus.inProgress;
-    final isUpcoming = status == MilestoneStatus.upcoming;
-    final nodeColor = status.nodeColor(colors);
-    final progressPct = '${(progress * 100).toInt()}%';
+    final nodeColor = milestone.status.nodeColor(colors);
 
     return IntrinsicHeight(
       child: Row(
@@ -227,17 +213,17 @@ class _TimelineTile extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: isDone
+                    color: milestone.isDone
                         ? colors.primaryTeal
-                        : isInProgress
+                        : milestone.isInProgress
                         ? colors.surfaceContainerHighest
                         : colors.surfaceContainerLow,
                     shape: BoxShape.circle,
-                    border: Border.all(color: nodeColor, width: isDone ? 0 : (isInProgress ? 2 : 1)),
+                    border: Border.all(color: nodeColor, width: milestone.isDone ? 0 : (milestone.isInProgress ? 2 : 1)),
                   ),
-                  child: isDone
+                  child: milestone.isDone
                       ? Icon(Icons.check_rounded, size: 13, color: colors.onPrimaryTeal)
-                      : isInProgress
+                      : milestone.isInProgress
                       ? Center(
                           child: Container(
                             width: 8,
@@ -259,7 +245,7 @@ class _TimelineTile extends StatelessWidget {
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
-                        color: isDone ? colors.primaryTeal.withValues(alpha: 0.35) : colors.outlineVariant.withValues(alpha: 0.2),
+                        color: milestone.isDone ? colors.primaryTeal.withValues(alpha: 0.35) : colors.outlineVariant.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),
@@ -273,10 +259,10 @@ class _TimelineTile extends StatelessWidget {
               margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isUpcoming ? colors.surfaceContainerLow : colors.surfaceContainer,
+                color: milestone.isUpcoming ? colors.surfaceContainerLow : colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDone ? colors.primaryTeal.withValues(alpha: 0.2) : colors.outlineVariant.withValues(alpha: 0.1),
+                  color: milestone.isDone ? colors.primaryTeal.withValues(alpha: 0.2) : colors.outlineVariant.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -287,26 +273,26 @@ class _TimelineTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          milestone.title ?? '--',
-                          style: AppTextStyles.s13SemiBold.copyWith(color: isUpcoming ? colors.onSurfaceDim : colors.onSurface),
+                          milestone.title,
+                          style: AppTextStyles.s13SemiBold.copyWith(color: milestone.isUpcoming ? colors.onSurfaceDim : colors.onSurface),
                         ),
                       ),
-                      if (isInProgress)
+                      if (milestone.isInProgress)
                         _MiniPill(label: 'In Progress', color: colors.warningAmber)
                       else
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(4)),
                           child: Text(
-                            progressPct,
-                            style: AppTextStyles.s11SemiBold.copyWith(color: isDone ? colors.primaryTeal : colors.onSurfaceDim),
+                            milestone.progressPct,
+                            style: AppTextStyles.s11SemiBold.copyWith(color: milestone.isDone ? colors.primaryTeal : colors.onSurfaceDim),
                           ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text(milestone.subtitle ?? '--', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
-                  if (isInProgress) ...[
+                  Text(milestone.subtitle, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+                  if (milestone.isInProgress) ...[
                     const SizedBox(height: 10),
                     Stack(
                       children: [
@@ -315,7 +301,7 @@ class _TimelineTile extends StatelessWidget {
                           decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(99)),
                         ),
                         FractionallySizedBox(
-                          widthFactor: progress,
+                          widthFactor: milestone.progress,
                           child: Container(
                             height: 6,
                             decoration: BoxDecoration(
@@ -330,9 +316,9 @@ class _TimelineTile extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Text('View Photos', style: AppTextStyles.s12Medium.copyWith(color: isUpcoming ? colors.onSurfaceDim : colors.primaryTeal)),
+                      Text('View Photos', style: AppTextStyles.s12Medium.copyWith(color: milestone.isUpcoming ? colors.onSurfaceDim : colors.primaryTeal)),
                       const SizedBox(width: 2),
-                      Icon(Icons.arrow_forward, size: 12, color: isUpcoming ? colors.onSurfaceDim : colors.primaryTeal),
+                      Icon(Icons.arrow_forward, size: 12, color: milestone.isUpcoming ? colors.onSurfaceDim : colors.primaryTeal),
                     ],
                   ),
                 ],

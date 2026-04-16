@@ -3,28 +3,33 @@ part of 'payment_bloc.dart';
 @immutable
 class PaymentState extends Equatable {
   final DataStatus status;
-  final PaymentsDataEntity? data;
+  final PaymentsViewModel? viewModel;
   final PaymentStatus? activeFilter;
   final String? error;
 
-  const PaymentState({this.status = DataStatus.initial, this.data, this.activeFilter, this.error});
+  const PaymentState({this.status = DataStatus.initial, this.viewModel, this.activeFilter, this.error});
 
-  PaymentState copyWith({DataStatus? status, PaymentsDataEntity? data, PaymentStatus? activeFilter, bool clearFilter = false, String? error}) {
+  PaymentState copyWith({
+    DataStatus? status,
+    PaymentsViewModel? viewModel,
+    PaymentStatus? activeFilter,
+    bool clearFilter = false,
+    String? error,
+  }) {
     return PaymentState(
       status: status ?? this.status,
-      data: data ?? this.data,
+      viewModel: viewModel ?? this.viewModel,
       activeFilter: clearFilter ? null : (activeFilter ?? this.activeFilter),
       error: error ?? this.error,
     );
   }
 
-  List<PaymentItemEntity> get filteredItems {
-    if (data == null) return [];
-    final items = data!.items ?? const <PaymentItemEntity>[];
-    if (activeFilter == null) return items;
-    return items.where((i) => i.status == activeFilter).toList();
+  List<PaymentItemVM> get filteredItems {
+    if (viewModel == null) return const [];
+    if (activeFilter == null) return viewModel!.allItems;
+    return viewModel!.allItems.where((i) => i.status == activeFilter).toList();
   }
 
   @override
-  List<Object?> get props => [status, data, activeFilter, error];
+  List<Object?> get props => [status, viewModel, activeFilter, error];
 }

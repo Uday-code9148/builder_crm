@@ -3,14 +3,14 @@ part of 'dashboard_bloc.dart';
 @immutable
 class DashboardState extends Equatable {
   final DataStatus status;
-  final DashboardDataEntity? data;
+  final DashboardViewModel? viewModel;
   final String? error;
   final String selectedTitle;
   final String selectedSubtitle;
 
   const DashboardState({
     this.status = DataStatus.initial,
-    this.data,
+    this.viewModel,
     this.error,
     this.selectedTitle = AppDisplayConstants.appTitle,
     this.selectedSubtitle = AppDisplayConstants.unitLabel,
@@ -18,14 +18,14 @@ class DashboardState extends Equatable {
 
   DashboardState copyWith({
     DataStatus? status,
-    DashboardDataEntity? data,
+    DashboardViewModel? viewModel,
     String? error,
     String? selectedTitle,
     String? selectedSubtitle,
   }) {
     return DashboardState(
       status: status ?? this.status,
-      data: data ?? this.data,
+      viewModel: viewModel ?? this.viewModel,
       error: error ?? this.error,
       selectedTitle: selectedTitle ?? this.selectedTitle,
       selectedSubtitle: selectedSubtitle ?? this.selectedSubtitle,
@@ -33,5 +33,5 @@ class DashboardState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [status, data, error, selectedTitle, selectedSubtitle];
+  List<Object?> get props => [status, viewModel, error, selectedTitle, selectedSubtitle];
 }

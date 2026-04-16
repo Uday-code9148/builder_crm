@@ -10,7 +10,7 @@ import 'package:temp_architecture_app_setup/features/auth/presentation/pages/res
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/sign_up_page.dart';
 import 'package:temp_architecture_app_setup/features/auth/presentation/pages/splash_page.dart';
-import 'package:temp_architecture_app_setup/features/documents/domain/entity/document_entities.dart';
+import 'package:temp_architecture_app_setup/features/documents/presentation/helpers/documents_view_model.dart';
 import 'package:temp_architecture_app_setup/features/home/presentation/pages/home_page.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/blocs/create_ticket_bloc/create_ticket_bloc.dart';
 import 'package:temp_architecture_app_setup/features/support/presentation/pages/new_ticket_page.dart';
@@ -41,16 +41,16 @@ final GoRouter appRouter = GoRouter(
       path: Routes.documentDetails,
       builder: (context, state) {
         final extra = state.extra;
-        if (extra is DocumentItemEntity) {
+        if (extra is DocItemVM) {
           return DocumentDetailsPage(
             title: extra.title,
             subtitle: extra.subtitle,
-            categoryLabel: extra.category?.label,
-            statusLabel: extra.status?.label,
+            categoryLabel: extra.categoryLabel,
+            statusLabel: extra.statusLabel,
             fileUrl: extra.fileUrl,
           );
         }
-        if (extra is CertDocumentEntity) {
+        if (extra is CertDocVM) {
           return DocumentDetailsPage(title: extra.title, subtitle: extra.subtitle, categoryLabel: 'Certificate & Compliance', fileUrl: extra.fileUrl);
         }
         return const DocumentDetailsPage();

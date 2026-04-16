@@ -12,20 +12,9 @@ import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dar
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/image_resources/image_resources.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
-import 'package:temp_architecture_app_setup/features/documents/domain/entity/document_entities.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/blocs/documents_bloc/documents_bloc.dart';
+import 'package:temp_architecture_app_setup/features/documents/presentation/helpers/documents_view_model.dart';
 import 'package:temp_architecture_app_setup/features/documents/presentation/widgets/documents_loading_skeleton.dart';
-
-Color _accentColor(String? token) {
-  switch (token) {
-    case 'secondaryPurple':
-      return ColorPalette.secondaryPurple;
-    case 'tertiaryTeal':
-      return ColorPalette.tertiaryTeal;
-    default:
-      return ColorPalette.primaryTealFixed;
-  }
-}
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
@@ -47,7 +36,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // required by AutomaticKeepAliveClientMixin
+    super.build(context);
     return buildContent(context);
   }
 
@@ -74,17 +63,15 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
 
   Widget _buildBody(DocumentsState state) {
     final colors = context.colors;
-    if (state.status == DataStatus.loading) {
-      return const DocumentsLoadingSkeleton();
-    }
+    if (state.status == DataStatus.loading) return const DocumentsLoadingSkeleton();
     if (state.status == DataStatus.error) {
       return Center(
         child: Text(state.error ?? 'Something went wrong', style: AppTextStyles.s13Regular.copyWith(color: colors.onSurfaceVariant)),
       );
     }
-    if (state.data == null) return const SizedBox.shrink();
+    if (state.viewModel == null) return const SizedBox.shrink();
 
-    final data = state.data!;
+    final vm = state.viewModel!;
 
     return RefreshIndicator(
       color: colors.primaryTeal,
@@ -94,9 +81,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
         bloc.add(const DocumentsLoadRequested());
         try {
           await bloc.stream.firstWhere((s) => s.status != DataStatus.loading).timeout(const Duration(seconds: 12));
-        } catch (_) {
-          // End the indicator even if the request fails/timeout.
-        }
+        } catch (_) {}
       },
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -110,11 +95,11 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
                 const SizedBox(height: 16),
                 _buildTabs(),
                 const SizedBox(height: 24),
-                _buildSection(title: 'Legal Documents', accentColor: ColorPalette.secondaryPurple, items: data.legalDocs ?? const <DocumentItemEntity>[]),
+                _buildSection(title: 'Legal Documents', accentColor: ColorPalette.secondaryPurple, items: vm.legalDocs),
                 const SizedBox(height: 20),
-                _buildSection(title: 'Payment & Finance', accentColor: colors.primaryTeal, items: data.paymentDocs ?? const <DocumentItemEntity>[]),
+                _buildSection(title: 'Payment & Finance', accentColor: colors.primaryTeal, items: vm.paymentDocs),
                 const SizedBox(height: 20),
-                _buildCertSection(data.certificates ?? const <CertDocumentEntity>[]),
+                _buildCertSection(vm.certificates),
               ]),
             ),
           ),
@@ -179,18 +164,14 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildSection({required String title, required Color accentColor, required List<DocumentItemEntity> items}) {
+  Widget _buildSection({required String title, required Color accentColor, required List<DocItemVM> items}) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Container(
-              width: 6,
-              height: 22,
-              decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(99)),
-            ),
+            Container(width: 6, height: 22, decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(99))),
             const SizedBox(width: 10),
             Text(title, style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
           ],
@@ -206,7 +187,7 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
             children: List.generate(items.length, (i) {
               return Column(
                 children: [
-                  _DocRowTile(item: items[i], onTap: () => _openDocumentDetails(items[i])),
+                  _DocRowTile(item: items[i], onTap: () => appRouter.push(Routes.documentDetails, extra: items[i])),
                   if (i < items.length - 1) Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.2)),
                 ],
               );
@@ -217,38 +198,26 @@ class _DocumentsPageState extends BaseState<DocumentsPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildCertSection(List<CertDocumentEntity> certs) {
+  Widget _buildCertSection(List<CertDocVM> certs) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Container(
-              width: 6,
-              height: 22,
-              decoration: BoxDecoration(color: colors.tertiaryTeal, borderRadius: BorderRadius.circular(99)),
-            ),
+            Container(width: 6, height: 22, decoration: BoxDecoration(color: colors.tertiaryTeal, borderRadius: BorderRadius.circular(99))),
             const SizedBox(width: 10),
             Text('Certificates & Compliance', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
           ],
         ),
-        ...certs.map((c) => _CertCard(doc: c, onTap: () => _openCertificateDetails(c))),
+        ...certs.map((c) => _CertCard(doc: c, onTap: () => appRouter.push(Routes.documentDetails, extra: c))),
       ],
     );
-  }
-
-  void _openDocumentDetails(DocumentItemEntity doc) {
-    appRouter.push(Routes.documentDetails, extra: doc);
-  }
-
-  void _openCertificateDetails(CertDocumentEntity cert) {
-    appRouter.push(Routes.documentDetails, extra: cert);
   }
 }
 
 class _DocRowTile extends StatelessWidget {
-  final DocumentItemEntity item;
+  final DocItemVM item;
   final VoidCallback onTap;
 
   const _DocRowTile({required this.item, required this.onTap});
@@ -256,8 +225,6 @@ class _DocRowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final statusLabel = item.status?.label;
-    final statusColor = item.status?.color;
 
     return GestureDetector(
       onTap: onTap,
@@ -272,7 +239,7 @@ class _DocRowTile extends StatelessWidget {
               decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(8)),
               child: Center(
                 child: SvgPicture.asset(
-                  item.iconAsset ?? ImageResources.icDocuments,
+                  item.iconAsset,
                   width: 18,
                   height: 18,
                   colorFilter: const ColorFilter.mode(ColorPalette.primaryTealFixedDim, BlendMode.srcIn),
@@ -284,20 +251,20 @@ class _DocRowTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title ?? '--', style: AppTextStyles.s13Medium.copyWith(color: colors.onSurface)),
-                  if ((item.subtitle ?? '').isNotEmpty) ...[
+                  Text(item.title, style: AppTextStyles.s13Medium.copyWith(color: colors.onSurface)),
+                  if (item.subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(item.subtitle ?? '', style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
+                    Text(item.subtitle!, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim)),
                   ],
                 ],
               ),
             ),
-            if (statusLabel != null && statusColor != null) ...[
+            if (item.statusLabel != null && item.statusColor != null) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
-                child: Text(statusLabel, style: AppTextStyles.s10SemiBold.copyWith(color: statusColor)),
+                decoration: BoxDecoration(color: item.statusColor!.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
+                child: Text(item.statusLabel!, style: AppTextStyles.s10SemiBold.copyWith(color: item.statusColor!)),
               ),
               const SizedBox(width: 8),
             ],
@@ -323,7 +290,7 @@ class _DocRowTile extends StatelessWidget {
 }
 
 class _CertCard extends StatelessWidget {
-  final CertDocumentEntity doc;
+  final CertDocVM doc;
   final VoidCallback onTap;
 
   const _CertCard({required this.doc, required this.onTap});
@@ -331,7 +298,6 @@ class _CertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accent = _accentColor(doc.accentTokenName);
     return Container(
       margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
@@ -350,7 +316,7 @@ class _CertCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.07),
+                  color: doc.accent.withValues(alpha: 0.07),
                   borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(56)),
                 ),
               ),
@@ -360,11 +326,11 @@ class _CertCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SvgPicture.asset(doc.iconAsset ?? ImageResources.icDocuments, width: 26, height: 26, colorFilter: ColorFilter.mode(accent, BlendMode.srcIn)),
+                  SvgPicture.asset(doc.iconAsset, width: 26, height: 26, colorFilter: ColorFilter.mode(doc.accent, BlendMode.srcIn)),
                   const SizedBox(height: 12),
-                  Text(doc.title ?? '--', style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
+                  Text(doc.title, style: AppTextStyles.s14SemiBold.copyWith(color: colors.onSurface)),
                   const SizedBox(height: 3),
-                  Text(doc.subtitle ?? '--', style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
+                  Text(doc.subtitle, style: AppTextStyles.s12Regular.copyWith(color: colors.onSurfaceVariant)),
                   const SizedBox(height: 14),
                   GestureDetector(
                     onTap: onTap,
@@ -377,7 +343,7 @@ class _CertCard extends StatelessWidget {
                         border: Border.all(color: colors.outlineVariant),
                       ),
                       child: Center(
-                        child: Text('View Certificate', style: AppTextStyles.s13Medium.copyWith(color: accent)),
+                        child: Text('View Certificate', style: AppTextStyles.s13Medium.copyWith(color: doc.accent)),
                       ),
                     ),
                   ),

@@ -9,6 +9,7 @@ import 'package:temp_architecture_app_setup/core/enums/ticket_status.dart';
 import 'package:temp_architecture_app_setup/core/usecases/usecase.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/entity/support_ticket_entity.dart';
 import 'package:temp_architecture_app_setup/features/support/domain/usecase/get_support_tickets_usecase.dart';
+import 'package:temp_architecture_app_setup/features/support/presentation/helpers/support_view_model.dart';
 
 part 'support_event.dart';
 part 'support_state.dart';
@@ -28,7 +29,7 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
     final result = await _getTickets(const NoParams());
     result.fold(
       (failure) => emit(state.copyWith(status: DataStatus.error, error: failure.message)),
-      (tickets) => emit(state.copyWith(status: DataStatus.loaded, tickets: tickets)),
+      (tickets) => emit(state.copyWith(status: DataStatus.loaded, viewModel: SupportViewModel.from(tickets))),
     );
   }
 
@@ -37,6 +38,9 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
   }
 
   FutureOr<void> _onTicketAdded(SupportTicketAdded event, Emitter<SupportState> emit) {
-    emit(state.copyWith(tickets: [event.ticket, ...state.tickets]));
+    if (state.viewModel != null) {
+      final updated = [TicketVM.from(event.ticket), ...state.viewModel!.allTickets];
+      emit(state.copyWith(viewModel: SupportViewModel(allTickets: updated)));
+    }
   }
 }

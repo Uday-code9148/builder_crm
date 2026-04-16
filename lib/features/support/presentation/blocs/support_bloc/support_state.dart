@@ -3,26 +3,33 @@ part of 'support_bloc.dart';
 @immutable
 class SupportState extends Equatable {
   final DataStatus status;
-  final List<SupportTicketEntity> tickets;
+  final SupportViewModel? viewModel;
   final TicketStatus? activeFilter;
   final String? error;
 
-  const SupportState({this.status = DataStatus.initial, this.tickets = const [], this.activeFilter, this.error});
+  const SupportState({this.status = DataStatus.initial, this.viewModel, this.activeFilter, this.error});
 
-  SupportState copyWith({DataStatus? status, List<SupportTicketEntity>? tickets, TicketStatus? activeFilter, bool clearFilter = false, String? error}) {
+  SupportState copyWith({
+    DataStatus? status,
+    SupportViewModel? viewModel,
+    TicketStatus? activeFilter,
+    bool clearFilter = false,
+    String? error,
+  }) {
     return SupportState(
       status: status ?? this.status,
-      tickets: tickets ?? this.tickets,
+      viewModel: viewModel ?? this.viewModel,
       activeFilter: clearFilter ? null : (activeFilter ?? this.activeFilter),
       error: error ?? this.error,
     );
   }
 
-  List<SupportTicketEntity> get filteredTickets {
-    if (activeFilter == null) return tickets;
-    return tickets.where((t) => t.status == activeFilter).toList();
+  List<TicketVM> get filteredTickets {
+    if (viewModel == null) return const [];
+    if (activeFilter == null) return viewModel!.allTickets;
+    return viewModel!.allTickets.where((t) => t.status == activeFilter).toList();
   }
 
   @override
-  List<Object?> get props => [status, tickets, activeFilter, error];
+  List<Object?> get props => [status, viewModel, activeFilter, error];
 }
