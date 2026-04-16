@@ -99,6 +99,18 @@ import 'package:temp_architecture_app_setup/features/payments/domain/usecases/ge
     as _i229;
 import 'package:temp_architecture_app_setup/features/payments/presentation/blocs/payments_bloc/payment_bloc.dart'
     as _i257;
+import 'package:temp_architecture_app_setup/features/profile/data/datasources/profile_datasource.dart'
+    as _i457;
+import 'package:temp_architecture_app_setup/features/profile/data/datasources/profile_mock_datasource.dart'
+    as _i581;
+import 'package:temp_architecture_app_setup/features/profile/data/repositories/profile_repository_impl.dart'
+    as _i383;
+import 'package:temp_architecture_app_setup/features/profile/domain/repositories/profile_repository.dart'
+    as _i363;
+import 'package:temp_architecture_app_setup/features/profile/domain/usecases/get_profile_usecase.dart'
+    as _i849;
+import 'package:temp_architecture_app_setup/features/profile/presentation/bloc/profile_bloc/profile_bloc.dart'
+    as _i467;
 import 'package:temp_architecture_app_setup/features/support/data/datasources/support_datasource.dart'
     as _i985;
 import 'package:temp_architecture_app_setup/features/support/data/datasources/support_mock_datasource.dart'
@@ -137,6 +149,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i126.AmplifyService>(() => _i126.AmplifyService());
     gh.singleton<_i597.HiveService>(() => _i597.HiveService());
     gh.singleton<_i546.TokenService>(() => const _i546.TokenService());
+    gh.lazySingleton<_i457.ProfileDataSource>(
+      () => _i581.ProfileMockDataSource(),
+    );
     gh.singleton<_i1013.ThemeCubit>(
       () => _i1013.ThemeCubit(gh<_i597.HiveService>()),
     );
@@ -152,11 +167,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i985.SupportDataSource>(
       () => _i855.SupportMockDataSource(),
     );
+    gh.factory<_i363.ProfileRepository>(
+      () => _i383.ProfileRepositoryImpl(gh<_i457.ProfileDataSource>()),
+    );
     gh.lazySingleton<_i128.PaymentsDataSource>(
       () => _i863.PaymentsMockDataSource(),
     );
     gh.lazySingleton<_i350.UpdatesDataSource>(
       () => _i67.UpdatesMockDataSource(),
+    );
+    gh.factory<_i849.GetProfileUseCase>(
+      () => _i849.GetProfileUseCase(gh<_i363.ProfileRepository>()),
     );
     gh.factory<_i143.DocumentsRepository>(
       () => _i13.DocumentsRepositoryImpl(gh<_i912.DocumentsDataSource>()),
@@ -247,6 +268,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i852.SignUpCubit>(
       () => _i852.SignUpCubit(gh<_i163.SignUpUseCase>()),
+    );
+    gh.factory<_i467.ProfileBloc>(
+      () => _i467.ProfileBloc(
+        gh<_i849.GetProfileUseCase>(),
+        gh<_i942.CheckAuthStatusUseCase>(),
+      ),
     );
     gh.factory<_i257.PaymentBloc>(
       () => _i257.PaymentBloc(gh<_i229.GetPaymentsUseCase>()),

@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:temp_architecture_app_setup/core/base/base_stateless_widget.dart';
-import 'package:temp_architecture_app_setup/core/common/constants/app_display_constants.dart';
 import 'package:temp_architecture_app_setup/core/common/widgets/curator_glass_app_bar.dart';
+import 'package:temp_architecture_app_setup/core/di/injection.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/app_colors.dart';
 import 'package:temp_architecture_app_setup/core/resources/colors/color_palette.dart';
 import 'package:temp_architecture_app_setup/core/resources/text_styles/app_text_styles.dart';
+import 'package:temp_architecture_app_setup/features/profile/presentation/bloc/profile_bloc/profile_bloc.dart';
+import 'package:temp_architecture_app_setup/features/profile/presentation/helpers/profile_view_model.dart';
 
 class ProfilePage extends BaseStatelessWidget {
   const ProfilePage({super.key});
+
+  @override
+  Widget buildContent(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<ProfileBloc>()..add(ProfileLoadRequested()),
+      child: const _ProfileView(),
+    );
+  }
+}
+
+class _ProfileView extends BaseStatelessWidget {
+  const _ProfileView();
 
   @override
   Widget buildContent(BuildContext context) {
@@ -28,38 +43,111 @@ class ProfilePage extends BaseStatelessWidget {
           child: Icon(Icons.person_rounded, size: 18, color: colors.white),
         ),
       ),
-      body: CustomScrollView(
+      body: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) => switch (state.status) {
+          ProfileStatus.initial || ProfileStatus.loading => const _LoadingView(),
+          ProfileStatus.error => _ErrorView(
+              message: state.errorMessage ?? 'Failed to load profile.',
+              onRetry: () => context.read<ProfileBloc>().add(ProfileLoadRequested()),
+            ),
+          ProfileStatus.loaded => _ProfileContent(vm: state.viewModel!),
+        },
+      ),
+    );
+  }
+}
+
+// ── Loading ───────────────────────────────────────────────────────────────────
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: CircularProgressIndicator(strokeWidth: 2.5, color: context.colors.primaryTeal));
+  }
+}
+
+// ── Error ─────────────────────────────────────────────────────────────────────
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 48, color: colors.errorDeep),
+            const SizedBox(height: 14),
+            Text(message, textAlign: TextAlign.center, style: AppTextStyles.s14Regular.copyWith(color: colors.onSurfaceVariant)),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.primaryTeal,
+                foregroundColor: colors.onPrimaryTeal,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Content ───────────────────────────────────────────────────────────────────
+
+class _ProfileContent extends StatelessWidget {
+  final ProfileViewModel vm;
+  const _ProfileContent({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: () async => context.read<ProfileBloc>().add(ProfileLoadRequested()),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 24),
-                _buildAvatarCard(context),
+                _AvatarCard(initials: vm.initials, name: vm.displayName, email: vm.displayEmail),
                 const SizedBox(height: 20),
-                _buildStatsRow(context),
+                _StatsRow(memberSince: vm.memberSince, tickets: vm.ticketsCount, documents: vm.documentsCount),
                 const SizedBox(height: 28),
-                _buildSectionLabel(context, 'Personal Information'),
+                const _SectionLabel(label: 'Account'),
                 const SizedBox(height: 10),
-                _buildGroup(context, const [
-                  _InfoRow(icon: Icons.person_outline_rounded, label: 'Full Name', value: 'Uday Kumar', editable: true),
-                  _InfoRow(icon: Icons.email_outlined, label: 'Email', value: 'udaykumar@leadrat.com', editable: true),
-                  _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: '+91 98765 43210', editable: true),
-                  _InfoRow(icon: Icons.cake_outlined, label: 'Date of Birth', value: '15 Aug 1995', editable: true),
+                _InfoGroup(rows: [
+                  _InfoRow(icon: Icons.person_outline_rounded, label: 'Full Name', value: vm.displayName, editable: true),
+                  _InfoRow(icon: Icons.email_outlined, label: 'Email', value: vm.displayEmail, editable: true),
+                  _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: vm.displayPhone, editable: true),
+                  _InfoRow(icon: Icons.cake_outlined, label: 'Date of Birth', value: vm.displayDob, editable: true),
                 ]),
                 const SizedBox(height: 24),
-                _buildSectionLabel(context, 'Property Details'),
+                const _SectionLabel(label: 'Property Details'),
                 const SizedBox(height: 10),
-                _buildGroup(context, const [
-                  _InfoRow(icon: Icons.apartment_rounded, label: 'Project', value: AppDisplayConstants.projectName),
-                  _InfoRow(icon: Icons.home_work_outlined, label: 'Unit', value: 'Unit 402'),
-                  _InfoRow(icon: Icons.layers_outlined, label: 'Phase', value: 'Possession Phase'),
-                  _InfoRow(icon: Icons.calendar_today_outlined, label: 'Booking Date', value: '12 Mar 2023'),
+                _InfoGroup(rows: [
+                  _InfoRow(icon: Icons.apartment_rounded, label: 'Project', value: vm.projectName),
+                  _InfoRow(icon: Icons.home_work_outlined, label: 'Unit', value: vm.unit),
+                  _InfoRow(icon: Icons.layers_outlined, label: 'Phase', value: vm.phase),
+                  _InfoRow(icon: Icons.calendar_today_outlined, label: 'Booking Date', value: vm.bookingDate),
                 ]),
                 const SizedBox(height: 24),
-                _buildSectionLabel(context, 'Preferences'),
+                const _SectionLabel(label: 'Preferences'),
                 const SizedBox(height: 10),
-                _buildPreferencesCard(context),
+                const _PreferencesCard(),
                 const SizedBox(height: 28),
               ]),
             ),
@@ -68,8 +156,18 @@ class ProfilePage extends BaseStatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildAvatarCard(BuildContext context) {
+// ── Avatar card ───────────────────────────────────────────────────────────────
+
+class _AvatarCard extends StatelessWidget {
+  final String initials;
+  final String name;
+  final String email;
+  const _AvatarCard({required this.initials, required this.name, required this.email});
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -92,15 +190,10 @@ class ProfilePage extends BaseStatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(color: colors.primaryTeal.withValues(alpha: 0.3), blurRadius: 18, offset: const Offset(0, 6)),
-                  ],
+                  boxShadow: [BoxShadow(color: colors.primaryTeal.withValues(alpha: 0.3), blurRadius: 18, offset: const Offset(0, 6))],
                 ),
                 child: Center(
-                  child: Text(
-                    'UK',
-                    style: AppTextStyles.s18SemiBold.copyWith(color: colors.onPrimaryTeal, letterSpacing: 1.5),
-                  ),
+                  child: Text(initials, style: AppTextStyles.s18SemiBold.copyWith(color: colors.onPrimaryTeal, letterSpacing: 1.5)),
                 ),
               ),
               Positioned(
@@ -124,22 +217,15 @@ class ProfilePage extends BaseStatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Uday Kumar',
-                  style: AppTextStyles.s18SemiBold.copyWith(color: colors.onSurface),
-                ),
+                Text(name, style: AppTextStyles.s18SemiBold.copyWith(color: colors.onSurface), overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 3),
-                Text(
-                  'udaykumar@leadrat.com',
-                  style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(email, style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim), overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _StatusChip(label: 'Verified', icon: Icons.verified_rounded, color: ColorPalette.primaryTeal),
+                    _Chip(label: 'Verified', icon: Icons.verified_rounded, color: ColorPalette.primaryTeal),
                     const SizedBox(width: 8),
-                    _StatusChip(label: 'Owner', icon: Icons.apartment_rounded, color: ColorPalette.warningAmber),
+                    _Chip(label: 'Owner', icon: Icons.apartment_rounded, color: ColorPalette.warningAmber),
                   ],
                 ),
               ],
@@ -149,13 +235,23 @@ class ProfilePage extends BaseStatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildStatsRow(BuildContext context) {
+// ── Stats row ─────────────────────────────────────────────────────────────────
+
+class _StatsRow extends StatelessWidget {
+  final String memberSince;
+  final String tickets;
+  final String documents;
+  const _StatsRow({required this.memberSince, required this.tickets, required this.documents});
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
-    const stats = [
-      _Stat(label: 'Since', value: '2023', icon: Icons.access_time_rounded),
-      _Stat(label: 'Tickets', value: '4', icon: Icons.support_agent_outlined),
-      _Stat(label: 'Documents', value: '12', icon: Icons.folder_outlined),
+    final stats = [
+      (label: 'Since', value: memberSince, icon: Icons.access_time_rounded),
+      (label: 'Tickets', value: tickets, icon: Icons.support_agent_outlined),
+      (label: 'Documents', value: documents, icon: Icons.folder_outlined),
     ];
     return Row(
       children: List.generate(stats.length, (i) {
@@ -170,17 +266,12 @@ class ProfilePage extends BaseStatelessWidget {
               border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15)),
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(stat.icon, size: 18, color: colors.primaryTeal),
                 const SizedBox(height: 6),
                 Text(stat.value, style: AppTextStyles.s16SemiBold.copyWith(color: colors.onSurface)),
                 const SizedBox(height: 2),
-                Text(
-                  stat.label,
-                  style: AppTextStyles.s9Regular.copyWith(color: colors.onSurfaceDim),
-                  textAlign: TextAlign.center,
-                ),
+                Text(stat.label, style: AppTextStyles.s9Regular.copyWith(color: colors.onSurfaceDim), textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -188,71 +279,22 @@ class ProfilePage extends BaseStatelessWidget {
       }),
     );
   }
-
-  Widget _buildSectionLabel(BuildContext context, String label) {
-    final colors = context.colors;
-    return Text(
-      label.toUpperCase(),
-      style: AppTextStyles.s11SemiBold.copyWith(color: colors.onSurfaceDim, letterSpacing: 1.0),
-    );
-  }
-
-  Widget _buildGroup(BuildContext context, List<_InfoRow> rows) {
-    final colors = context.colors;
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
-      ),
-      child: Column(
-        children: List.generate(rows.length, (i) {
-          final isLast = i == rows.length - 1;
-          return Column(
-            children: [
-              _InfoRowTile(row: rows[i]),
-              if (!isLast)
-                Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.15)),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-
-  Widget _buildPreferencesCard(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15), width: 1),
-      ),
-      child: Column(
-        children: [
-          const _NotificationToggleTile(),
-          Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.15)),
-          const _InfoRowTile(
-            row: _InfoRow(icon: Icons.language_rounded, label: 'Language', value: 'English', editable: true),
-          ),
-          Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.15)),
-          const _InfoRowTile(
-            row: _InfoRow(icon: Icons.security_outlined, label: 'Privacy & Data', value: 'Manage', editable: true),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// ── Data models ───────────────────────────────────────────────────────────────
+// ── Section label ─────────────────────────────────────────────────────────────
 
-class _Stat {
+class _SectionLabel extends StatelessWidget {
   final String label;
-  final String value;
-  final IconData icon;
-  const _Stat({required this.label, required this.value, required this.icon});
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Text(label.toUpperCase(), style: AppTextStyles.s11SemiBold.copyWith(color: colors.onSurfaceDim, letterSpacing: 1.0));
+  }
 }
+
+// ── Info group ────────────────────────────────────────────────────────────────
 
 class _InfoRow {
   final IconData icon;
@@ -262,30 +304,29 @@ class _InfoRow {
   const _InfoRow({required this.icon, required this.label, required this.value, this.editable = false});
 }
 
-// ── Widgets ───────────────────────────────────────────────────────────────────
-
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _StatusChip({required this.label, required this.icon, required this.color});
+class _InfoGroup extends StatelessWidget {
+  final List<_InfoRow> rows;
+  const _InfoGroup({required this.rows});
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: AppTextStyles.s9SemiBold.copyWith(color: color)),
-        ],
+      child: Column(
+        children: List.generate(rows.length, (i) {
+          final isLast = i == rows.length - 1;
+          return Column(
+            children: [
+              _InfoRowTile(row: rows[i]),
+              if (!isLast) Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.15)),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -305,10 +346,7 @@ class _InfoRowTile extends StatelessWidget {
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(10),
-            ),
+            decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(10)),
             child: Icon(row.icon, size: 18, color: colors.primaryTealFixedDim),
           ),
           const SizedBox(width: 14),
@@ -329,52 +367,95 @@ class _InfoRowTile extends StatelessWidget {
   }
 }
 
-class _NotificationToggleTile extends StatefulWidget {
-  const _NotificationToggleTile();
+// ── Preferences card ──────────────────────────────────────────────────────────
+
+class _PreferencesCard extends StatefulWidget {
+  const _PreferencesCard();
 
   @override
-  State<_NotificationToggleTile> createState() => _NotificationToggleTileState();
+  State<_PreferencesCard> createState() => _PreferencesCardState();
 }
 
-class _NotificationToggleTileState extends State<_NotificationToggleTile> {
-  bool _enabled = true;
+class _PreferencesCardState extends State<_PreferencesCard> {
+  bool _notificationsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.15)),
+      ),
+      child: Column(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.notifications_outlined, size: 18, color: colors.primaryTealFixedDim),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
               children: [
-                Text('Notifications', style: AppTextStyles.s14Medium.copyWith(color: colors.onSurface)),
-                const SizedBox(height: 2),
-                Text(
-                  _enabled ? 'Alerts & reminders on' : 'All notifications off',
-                  style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(color: colors.surfaceContainerHigh, borderRadius: BorderRadius.circular(10)),
+                  child: Icon(Icons.notifications_outlined, size: 18, color: colors.primaryTealFixedDim),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Notifications', style: AppTextStyles.s14Medium.copyWith(color: colors.onSurface)),
+                      const SizedBox(height: 2),
+                      Text(
+                        _notificationsEnabled ? 'Alerts & reminders on' : 'All notifications off',
+                        style: AppTextStyles.s11Regular.copyWith(color: colors.onSurfaceDim),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: _notificationsEnabled,
+                  onChanged: (v) => setState(() => _notificationsEnabled = v),
+                  activeThumbColor: colors.primaryTeal,
+                  activeTrackColor: colors.primaryTeal.withValues(alpha: 0.25),
                 ),
               ],
             ),
           ),
-          Switch.adaptive(
-            value: _enabled,
-            onChanged: (v) => setState(() => _enabled = v),
-            activeThumbColor: colors.primaryTeal,
-            activeTrackColor: colors.primaryTeal.withValues(alpha: 0.25),
-          ),
+          Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.15)),
+          const _InfoRowTile(row: _InfoRow(icon: Icons.language_rounded, label: 'Language', value: 'English', editable: true)),
+          Divider(height: 1, indent: 56, color: colors.outlineVariant.withValues(alpha: 0.15)),
+          const _InfoRowTile(row: _InfoRow(icon: Icons.security_outlined, label: 'Privacy & Data', value: 'Manage', editable: true)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Chip ──────────────────────────────────────────────────────────────────────
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _Chip({required this.label, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: AppTextStyles.s9SemiBold.copyWith(color: color)),
         ],
       ),
     );
